@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<title>Sexy Slots</title>
+<style>
+/* ===================
+   GLOBAL THEME + RESET
+   =================== */
+html, body {
+  margin: 0;
+  padding: 0;
+  background-color: #111;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  height: 100%;
+  overflow: hidden;
+}
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+button {
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.hidden { display: none !important; }
+.safe-area {
+  padding-top: calc(env(safe-area-inset-top) + 2cm);
+}
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5em;
+  background: #000;
+  color: white;
+  font-weight: bold;
+  border-bottom: 1px solid #333;
+}
+header.rig-mode {
+  color: gold;
+}
+.hamburger {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.controls {
+  display: flex;
+  justify-content: space-around;
+  padding: 0.5em;
+}
+.controls button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.3em 0.6em;
+  background: #222;
+  border-radius: 6px;
+}
+.controls button.active {
+  background: gold;
+  color: black;
+}
+.spin-btn {
+  display: block;
+  margin: 0.5em auto;
+  padding: 0.8em 2em;
+  background: crimson;
+  color: white;
+  border-radius: 8px;
+  font-size: 1.2em;
+}
+.reels {
+  display: flex;
+  justify-content: center;
+  padding: 0.5em;
+  gap: 0.5em;
+}
+.reel {
+  width: 80px;
+  height: 80px;
+  background: #222;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.reel img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.reveal {
+  flex: 1;
+  overflow-y: auto;
+  text-align: center;
+}
+.reveal h2 {
+  margin: 0.5em 0;
+}
+.reveal img {
+  width: 100%;
+  max-height: 50vh;
+  object-fit: contain;
+}
+.meters {
+  padding: 0.5em;
+}
+.meter {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.3em;
+}
+.meter label {
+  flex: 1;
+}
+.stars {
+  color: gold;
+}
+/* Overlay panels */
+.overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.95);
+  color: white;
+  z-index: 999;
+  overflow-y: auto;
+  padding: calc(env(safe-area-inset-top) + 1em) 1em 1em 1em;
+  display: none;
+}
+.overlay.active {
+  display: block;
+}
+.position-card {
+  background: #222;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  border-radius: 6px;
+}
+.position-card img {
+  width: 100%;
+  border-radius: 6px;
+}
+/* Rig Menu */
+.rig-category, .weight-control {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.weight-control button {
+  background: #444;
+  border-radius: 4px;
+  padding: 0.2em 0.5em;
+}
+</style>
+</head>
+<body class="safe-area">
+<header id="main-header">
+  <div class="hamburger" id="open-settings">☰</div>
+  <div id="title">Sexy Slots</div>
+  <div></div>
+</header>
+
+<div class="controls">
+  <button id="oral-toggle">Oral</button>
+  <button id="category-btn">Category</button>
+  <button id="timer-btn">Time</button>
+</div>
+<button class="spin-btn" id="spin-btn">SPIN</button>
+
+<div class="reels">
+  <div class="reel"><img id="reel1" src="" alt=""></div>
+  <div class="reel"><img id="reel2" src="" alt=""></div>
+  <div class="reel"><img id="reel3" src="" alt=""></div>
+</div>
+
+<div class="reveal">
+  <h2 id="position-name">Position</h2>
+  <img id="position-image" src="" alt="">
+  <div class="meters">
+    <div class="meter"><label id="difficulty-label">Difficulty</label><span id="difficulty-stars" class="stars"></span></div>
+    <div class="meter"><label>Her-O Meter</label><span id="hero-stars" class="stars"></span></div>
+    <div class="meter"><label>His-O Meter</label><span id="hiso-stars" class="stars"></span></div>
+  </div>
+</div>
+
+<!-- Settings Overlay -->
+<div class="overlay" id="settings-overlay">
+  <h2>Settings</h2>
+  <button id="upload-btn">Upload</button>
+  <button id="rig-btn">Rig</button>
+  <h3>Positions</h3>
+  <div id="positions-list"></div>
+  <button onclick="closeSettings()">Close</button>
+</div>
+
+<!-- Rig Overlay -->
+<div class="overlay" id="rig-overlay">
+  <h2>Rig Menu</h2>
+  <div id="rig-weights"></div>
+  <button onclick="closeRig()">Close</button>
+</div>
+
+<script>
+/* ===================
+   CONSTANTS & DATA
+   =================== */
+const categories = ["Missionary","Woman-on-top","Oral for Her","Oral for Him","Sitting","Standing","Side-by-Side","Deep Penetration","69","Rear Entry","BDSM for Lovers","Adventurous"];
+const allCategories = ["All","Unassigned",...categories];
+let positions = []; // metadata array
+let rigMode = false;
+let currentCategory = "All";
+let oralOnly = false;
+let timerDuration = 0; // in seconds
+let timerId = null;
+let spinQueue = [];
+
+/* ===================
+   UTILS
+   =================== */
+function renderStars(n) {
+  return "★".repeat(n) + "☆".repeat(5-n);
+}
+
+/* ===================
+   UI EVENT BINDINGS
+   =================== */
+document.getElementById('oral-toggle').onclick = () => {
+  oralOnly = !oralOnly;
+  document.getElementById('oral-toggle').classList.toggle('active', oralOnly);
+  saveState();
+};
+document.getElementById('category-btn').onclick = () => {
+  let sel = prompt("Select category:\n" + allCategories.join("\n"), currentCategory);
+  if (sel && allCategories.includes(sel)) {
+    currentCategory = sel;
+    saveState();
+  }
+};
+document.getElementById('timer-btn').onclick = () => {
+  let t = prompt("Timer (min, 0=off):", timerDuration/60);
+  let mins = parseInt(t);
+  if (!isNaN(mins) && mins >= 0) {
+    timerDuration = mins*60;
+    saveState();
+  }
+};
+document.getElementById('spin-btn').onclick = spin;
+document.getElementById('open-settings').onclick = () => {
+  document.getElementById('settings-overlay').classList.add('active');
+  renderPositionsList();
+};
+document.getElementById('rig-btn').onclick = () => {
+  let pin = prompt("Enter PIN");
+  if (pin === "1616") {
+    document.getElementById('rig-overlay').classList.add('active');
+    renderRigWeights();
+  }
+};
+document.getElementById('difficulty-label').onclick = () => {
+  rigMode = !rigMode;
+  document.getElementById('main-header').classList.toggle('rig-mode', rigMode);
+  saveState();
+};
+
+/* ===================
+   CORE LOGIC
+   =================== */
+function spin() {
+  if (timerId) return; // disable if timer running
+
+  let pool = positions.filter(p => !p.exclude && p.weight > 0);
+  if (oralOnly) pool = pool.filter(p => ["Oral for Her","Oral for Him"].includes(p.category));
+  if (currentCategory !== "All" && currentCategory !== "Unassigned") {
+    pool = pool.filter(p => p.category === currentCategory);
+  }
+  if (rigMode && spinQueue.length) {
+    let forced = spinQueue.shift();
+    showPosition(forced);
+  } else {
+    let chosen = weightedRandom(pool);
+    showPosition(chosen);
+  }
+  if (timerDuration > 0) startTimer();
+}
+function weightedRandom(pool) {
+  let totalWeight = pool.reduce((a,b) => a + b.weight, 0);
+  let r = Math.random() * totalWeight;
+  for (let p of pool) {
+    if ((r -= p.weight) <= 0) return p;
+  }
+  return pool[0];
+}
+function showPosition(pos) {
+  document.getElementById('position-name').textContent = pos.name;
+  document.getElementById('position-image').src = pos.url;
+  document.getElementById('difficulty-stars').textContent = renderStars(pos.difficulty);
+  document.getElementById('hero-stars').textContent = renderStars(pos.hero);
+  document.getElementById('hiso-stars').textContent = renderStars(pos.hiso);
+}
+
+/* ===================
+   TIMER
+   =================== */
+function startTimer() {
+  let remaining = timerDuration;
+  timerId = setInterval(() => {
+    remaining--;
+    if (remaining <= 0) {
+      clearInterval(timerId);
+      timerId = null;
+      alert("Time's up!");
+    }
+  }, 1000);
+}
+
+/* ===================
+   SETTINGS
+   =================== */
+function renderPositionsList() {
+  let list = document.getElementById('positions-list');
+  list.innerHTML = "";
+  positions.forEach(pos => {
+    let card = document.createElement('div');
+    card.className = 'position-card';
+    card.innerHTML = `
+      <img src="${pos.url}">
+      <input value="${pos.name}" onchange="updatePosName('${pos.id}', this.value)">
+      <div>${pos.category}</div>
+      <div>Diff: ${renderStars(pos.difficulty)}</div>
+    `;
+    list.appendChild(card);
+  });
+}
+function updatePosName(id, newName) {
+  let pos = positions.find(p => p.id === id);
+  if (pos) { pos.name = newName; saveState(); }
+}
+function closeSettings() {
+  document.getElementById('settings-overlay').classList.remove('active');
+}
+function closeRig() {
+  document.getElementById('rig-overlay').classList.remove('active');
+}
+function renderRigWeights() {
+  let rigDiv = document.getElementById('rig-weights');
+  rigDiv.innerHTML = "";
+  positions.forEach(pos => {
+    let row = document.createElement('div');
+    row.className = 'rig-category';
+    row.innerHTML = `
+      <span>${pos.category}</span>
+      <div class="weight-control">
+        <button onclick="changeWeight('${pos.id}',-1)">-</button>
+        ${pos.weight}
+        <button onclick="changeWeight('${pos.id}',1)">+</button>
+      </div>
+    `;
+    rigDiv.appendChild(row);
+  });
+}
+function changeWeight(id, delta) {
+  let pos = positions.find(p => p.id === id);
+  if (pos) { pos.weight = Math.max(0, pos.weight + delta); saveState(); renderRigWeights(); }
+}
+
+/* ===================
+   PERSISTENCE
+   =================== */
+function saveState() {
+  localStorage.setItem('positions', JSON.stringify(positions));
+  localStorage.setItem('oralOnly', oralOnly);
+  localStorage.setItem('category', currentCategory);
+  localStorage.setItem('rigMode', rigMode);
+  localStorage.setItem('timerDuration', timerDuration);
+}
+function loadState() {
+  positions = JSON.parse(localStorage.getItem('positions') || "[]");
+  oralOnly = localStorage.getItem('oralOnly') === "true";
+  currentCategory = localStorage.getItem('category') || "All";
+  rigMode = localStorage.getItem('rigMode') === "true";
+  timerDuration = parseInt(localStorage.getItem('timerDuration') || "0");
+  document.getElementById('oral-toggle').classList.toggle('active', oralOnly);
+  document.getElementById('main-header').classList.toggle('rig-mode', rigMode);
+}
+loadState();
+
+</script>
+</body>
+</html>
