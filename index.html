@@ -1,398 +1,372 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta charset="utf-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
 <title>Sexy Slots</title>
+
+<!-- iOS PWA -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+
+<!-- Manifest -->
+<link rel="manifest" href="manifest.webmanifest">
+
 <style>
-/* ===================
-   GLOBAL THEME + RESET
-   =================== */
-html, body {
-  margin: 0;
-  padding: 0;
-  background-color: #111;
-  color: #fff;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  height: 100%;
-  overflow: hidden;
-}
-* {
-  box-sizing: border-box;
-  -webkit-tap-highlight-color: transparent;
-}
-button {
-  background: none;
-  border: none;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-}
-.hidden { display: none !important; }
-.safe-area {
-  padding-top: calc(env(safe-area-inset-top) + 2cm);
-}
-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.5em;
-  background: #000;
-  color: white;
-  font-weight: bold;
-  border-bottom: 1px solid #333;
-}
-header.rig-mode {
-  color: gold;
-}
-.hamburger {
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.controls {
-  display: flex;
-  justify-content: space-around;
-  padding: 0.5em;
-}
-.controls button {
-  min-width: 44px;
-  min-height: 44px;
-  padding: 0.3em 0.6em;
-  background: #222;
-  border-radius: 6px;
-}
-.controls button.active {
-  background: gold;
-  color: black;
-}
-.spin-btn {
-  display: block;
-  margin: 0.5em auto;
-  padding: 0.8em 2em;
-  background: crimson;
-  color: white;
-  border-radius: 8px;
-  font-size: 1.2em;
-}
-.reels {
-  display: flex;
-  justify-content: center;
-  padding: 0.5em;
-  gap: 0.5em;
-}
-.reel {
-  width: 80px;
-  height: 80px;
-  background: #222;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-.reel img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.reveal {
-  flex: 1;
-  overflow-y: auto;
-  text-align: center;
-}
-.reveal h2 {
-  margin: 0.5em 0;
-}
-.reveal img {
-  width: 100%;
-  max-height: 50vh;
-  object-fit: contain;
-}
-.meters {
-  padding: 0.5em;
-}
-.meter {
-  display: flex;
-  align-items: center;
-  margin-bottom: 0.3em;
-}
-.meter label {
-  flex: 1;
-}
-.stars {
-  color: gold;
-}
-/* Overlay panels */
-.overlay {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.95);
-  color: white;
-  z-index: 999;
-  overflow-y: auto;
-  padding: calc(env(safe-area-inset-top) + 1em) 1em 1em 1em;
-  display: none;
-}
-.overlay.active {
-  display: block;
-}
-.position-card {
-  background: #222;
-  padding: 0.5em;
-  margin-bottom: 0.5em;
-  border-radius: 6px;
-}
-.position-card img {
-  width: 100%;
-  border-radius: 6px;
-}
-/* Rig Menu */
-.rig-category, .weight-control {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.weight-control button {
-  background: #444;
-  border-radius: 4px;
-  padding: 0.2em 0.5em;
-}
+/* === GLOBAL THEME === */
+html,body{margin:0;padding:0;height:100%;background:#0b0b0d;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+button{border:none;background:none;color:inherit;font:inherit;cursor:pointer}
+input,select{background:#141419;color:#fff;border:1px solid #2a2a36;border-radius:10px;padding:.5em .7em}
+.hidden{display:none!important}
+.safe-pad{height:calc(env(safe-area-inset-top) + 2cm)}
+
+/* HEADER */
+header{display:flex;justify-content:space-between;align-items:center;padding:.4rem .6rem;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);border-bottom:1px solid #222}
+header.rig .title{color:#e2b94b}
+.hamb{width:44px;height:44px;display:grid;place-items:center;border-radius:10px}
+.title{font-weight:bold}
+
+/* CONTROLS */
+.controls{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;padding:.5rem}
+.ctrl{background:#1c1c22;border-radius:12px;min-height:44px;display:flex;align-items:center;justify-content:center}
+.ctrl.active{background:#e2b94b;color:#000;font-weight:700}
+.pill{margin-left:.4em;background:#2a2a36;border-radius:999px;padding:0 .5em;font-size:12px}
+
+/* SPIN BUTTON */
+.spin-wrap{padding:.3rem .6rem}
+#spin{width:100%;min-height:50px;background:linear-gradient(180deg,#ff3b66,#c90d40);border-radius:14px;font-weight:800;letter-spacing:.4px}
+#spin[disabled]{opacity:.4}
+
+/* REELS */
+.reels{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;padding:.5rem}
+.reel{height:88px;background:#1c1c22;border-radius:12px;overflow:hidden;position:relative}
+.inner{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;transition:filter .2s}
+.blur{filter:blur(2px)}
+.reel img{width:100%;height:100%;object-fit:cover}
+
+/* REVEAL */
+.reveal{flex:1;display:flex;flex-direction:column;overflow:auto}
+.name{padding:.5rem;text-align:center;font-weight:bold}
+.big-img{flex:1;display:grid;place-items:center;padding:.5rem}
+.big-img img{max-width:100%;max-height:50vh;object-fit:contain;border-radius:14px;background:#000}
+.meters{padding:.5rem}
+.meter{display:flex;justify-content:space-between;background:#141419;border-radius:10px;padding:.4rem .6rem;margin-bottom:.4rem}
+.stars{color:#e2b94b}
+
+/* SETTINGS */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.9);backdrop-filter:blur(6px);z-index:99;display:none}
+.overlay.show{display:block}
+.sheet{position:absolute;inset:calc(env(safe-area-inset-top) + 1rem) .6rem 1rem;background:#1c1c22;border-radius:14px;display:flex;flex-direction:column}
+.sheet header{display:flex;justify-content:space-between;align-items:center;padding:.5rem;border-bottom:1px solid #2a2a36}
+.sheet .content{flex:1;overflow:auto;padding:.5rem}
+.card{background:#141419;border-radius:10px;padding:.4rem;margin-bottom:.5rem}
+.card img{width:100%;border-radius:8px}
 </style>
 </head>
-<body class="safe-area">
-<header id="main-header">
-  <div class="hamburger" id="open-settings">☰</div>
-  <div id="title">Sexy Slots</div>
-  <div></div>
+<body>
+<div class="safe-pad"></div>
+<header id="hdr">
+  <button class="hamb" id="btnSettings">☰</button>
+  <div class="title">Sexy Slots</div>
+  <div style="width:44px"></div>
 </header>
 
 <div class="controls">
-  <button id="oral-toggle">Oral</button>
-  <button id="category-btn">Category</button>
-  <button id="timer-btn">Time</button>
+  <button class="ctrl" id="oralCtrl">Oral<span class="pill" id="oralPill">OFF</span></button>
+  <button class="ctrl" id="catCtrl">Category<span class="pill" id="catPill">All</span></button>
+  <button class="ctrl" id="timeCtrl">Timer<span class="pill" id="timePill">Off</span></button>
 </div>
-<button class="spin-btn" id="spin-btn">SPIN</button>
-
+<div class="spin-wrap"><button id="spin">SPIN</button></div>
 <div class="reels">
-  <div class="reel"><img id="reel1" src="" alt=""></div>
-  <div class="reel"><img id="reel2" src="" alt=""></div>
-  <div class="reel"><img id="reel3" src="" alt=""></div>
+  <div class="reel"><div class="inner" id="r1"><img></div></div>
+  <div class="reel"><div class="inner" id="r2"><img></div></div>
+  <div class="reel"><div class="inner" id="r3"><img></div></div>
 </div>
-
 <div class="reveal">
-  <h2 id="position-name">Position</h2>
-  <img id="position-image" src="" alt="">
+  <div class="name" id="revName">Position</div>
+  <div class="big-img"><img id="revImg"></div>
   <div class="meters">
-    <div class="meter"><label id="difficulty-label">Difficulty</label><span id="difficulty-stars" class="stars"></span></div>
-    <div class="meter"><label>Her-O Meter</label><span id="hero-stars" class="stars"></span></div>
-    <div class="meter"><label>His-O Meter</label><span id="hiso-stars" class="stars"></span></div>
+    <div class="meter"><div id="difficultyLabel">Difficulty</div><div class="stars" id="mDiff">☆☆☆☆☆</div></div>
+    <div class="meter"><div>Her-O</div><div class="stars" id="mHer">☆☆☆☆☆</div></div>
+    <div class="meter"><div>His-O</div><div class="stars" id="mHis">☆☆☆☆☆</div></div>
   </div>
 </div>
 
-<!-- Settings Overlay -->
-<div class="overlay" id="settings-overlay">
-  <h2>Settings</h2>
-  <button id="upload-btn">Upload</button>
-  <button id="rig-btn">Rig</button>
-  <h3>Positions</h3>
-  <div id="positions-list"></div>
-  <button onclick="closeSettings()">Close</button>
-</div>
-
-<!-- Rig Overlay -->
-<div class="overlay" id="rig-overlay">
-  <h2>Rig Menu</h2>
-  <div id="rig-weights"></div>
-  <button onclick="closeRig()">Close</button>
+<!-- SETTINGS -->
+<div class="overlay" id="settings">
+  <div class="sheet">
+    <header>
+      <button id="btnUpload">Upload</button>
+      <button id="btnRig">Rig</button>
+    </header>
+    <div class="content" id="settingsList"></div>
+    <button onclick="closeSettings()">Close</button>
+  </div>
 </div>
 
 <script>
-/* ===================
-   CONSTANTS & DATA
-   =================== */
-const categories = ["Missionary","Woman-on-top","Oral for Her","Oral for Him","Sitting","Standing","Side-by-Side","Deep Penetration","69","Rear Entry","BDSM for Lovers","Adventurous"];
-const allCategories = ["All","Unassigned",...categories];
-let positions = []; // metadata array
-let rigMode = false;
-let currentCategory = "All";
-let oralOnly = false;
-let timerDuration = 0; // in seconds
-let timerId = null;
-let spinQueue = [];
+let idb, meta={}, state={
+  oralOnly:false, category:"All", timerMin:0, rig:false,
+  flows:[[],[],[],[],[],[],[]], flowIndex:0, queue:[]
+};
+const CATS=["Missionary","Woman-on-top","Oral for Her","Oral for Him","Sitting","Standing","Side-by-Side","Deep Penetration","69","Rear Entry","BDSM for Lovers","Adventurous"];
+const ALL_CATS=["All","Unassigned",...CATS];
+const $=s=>document.querySelector(s);
 
-/* ===================
-   UTILS
-   =================== */
-function renderStars(n) {
-  return "★".repeat(n) + "☆".repeat(5-n);
-}
+function saveMeta(){localStorage.setItem("slotsMeta",JSON.stringify(meta));}
+function loadMeta(){meta=JSON.parse(localStorage.getItem("slotsMeta")||"{}");}
+function saveState(){localStorage.setItem("slotsState",JSON.stringify(state));}
+function loadState(){Object.assign(state,JSON.parse(localStorage.getItem("slotsState")||"{}"));}
 
-/* ===================
-   UI EVENT BINDINGS
-   =================== */
-document.getElementById('oral-toggle').onclick = () => {
-  oralOnly = !oralOnly;
-  document.getElementById('oral-toggle').classList.toggle('active', oralOnly);
-  saveState();
-};
-document.getElementById('category-btn').onclick = () => {
-  let sel = prompt("Select category:\n" + allCategories.join("\n"), currentCategory);
-  if (sel && allCategories.includes(sel)) {
-    currentCategory = sel;
-    saveState();
-  }
-};
-document.getElementById('timer-btn').onclick = () => {
-  let t = prompt("Timer (min, 0=off):", timerDuration/60);
-  let mins = parseInt(t);
-  if (!isNaN(mins) && mins >= 0) {
-    timerDuration = mins*60;
-    saveState();
-  }
-};
-document.getElementById('spin-btn').onclick = spin;
-document.getElementById('open-settings').onclick = () => {
-  document.getElementById('settings-overlay').classList.add('active');
-  renderPositionsList();
-};
-document.getElementById('rig-btn').onclick = () => {
-  let pin = prompt("Enter PIN");
-  if (pin === "1616") {
-    document.getElementById('rig-overlay').classList.add('active');
-    renderRigWeights();
-  }
-};
-document.getElementById('difficulty-label').onclick = () => {
-  rigMode = !rigMode;
-  document.getElementById('main-header').classList.toggle('rig-mode', rigMode);
-  saveState();
-};
-
-/* ===================
-   CORE LOGIC
-   =================== */
-function spin() {
-  if (timerId) return; // disable if timer running
-
-  let pool = positions.filter(p => !p.exclude && p.weight > 0);
-  if (oralOnly) pool = pool.filter(p => ["Oral for Her","Oral for Him"].includes(p.category));
-  if (currentCategory !== "All" && currentCategory !== "Unassigned") {
-    pool = pool.filter(p => p.category === currentCategory);
-  }
-  if (rigMode && spinQueue.length) {
-    let forced = spinQueue.shift();
-    showPosition(forced);
-  } else {
-    let chosen = weightedRandom(pool);
-    showPosition(chosen);
-  }
-  if (timerDuration > 0) startTimer();
-}
-function weightedRandom(pool) {
-  let totalWeight = pool.reduce((a,b) => a + b.weight, 0);
-  let r = Math.random() * totalWeight;
-  for (let p of pool) {
-    if ((r -= p.weight) <= 0) return p;
-  }
-  return pool[0];
-}
-function showPosition(pos) {
-  document.getElementById('position-name').textContent = pos.name;
-  document.getElementById('position-image').src = pos.url;
-  document.getElementById('difficulty-stars').textContent = renderStars(pos.difficulty);
-  document.getElementById('hero-stars').textContent = renderStars(pos.hero);
-  document.getElementById('hiso-stars').textContent = renderStars(pos.hiso);
-}
-
-/* ===================
-   TIMER
-   =================== */
-function startTimer() {
-  let remaining = timerDuration;
-  timerId = setInterval(() => {
-    remaining--;
-    if (remaining <= 0) {
-      clearInterval(timerId);
-      timerId = null;
-      alert("Time's up!");
+function openDB(){return new Promise((res,rej)=>{
+  const req=indexedDB.open("SlotsDB",1);
+  req.onupgradeneeded=e=>{
+    const db=e.target.result;
+    if(!db.objectStoreNames.contains("images")){
+      db.createObjectStore("images",{keyPath:"id"});
     }
-  }, 1000);
-}
+  };
+  req.onsuccess=()=>{idb=req.result;res();};
+  req.onerror=()=>rej();
+});}
+function putImage(id,blob){return new Promise((res,rej)=>{
+  const tx=idb.transaction("images","readwrite");
+  tx.objectStore("images").put({id,blob});
+  tx.oncomplete=res; tx.onerror=rej;
+});}
+function getImage(id){return new Promise((res,rej)=>{
+  const tx=idb.transaction("images","readonly");
+  const g=tx.objectStore("images").get(id);
+  g.onsuccess=()=>res(g.result); g.onerror=rej;
+});}
+function deleteImage(id){return new Promise((res,rej)=>{
+  const tx=idb.transaction("images","readwrite");
+  tx.objectStore("images").delete(id);
+  tx.oncomplete=res; tx.onerror=rej;
+});}
 
-/* ===================
-   SETTINGS
-   =================== */
-function renderPositionsList() {
-  let list = document.getElementById('positions-list');
-  list.innerHTML = "";
-  positions.forEach(pos => {
-    let card = document.createElement('div');
-    card.className = 'position-card';
-    card.innerHTML = `
-      <img src="${pos.url}">
-      <input value="${pos.name}" onchange="updatePosName('${pos.id}', this.value)">
-      <div>${pos.category}</div>
-      <div>Diff: ${renderStars(pos.difficulty)}</div>
-    `;
+/* ====== UPLOAD ====== */
+$("#btnUpload").onclick=()=>{
+  const inp=document.createElement("input");
+  inp.type="file"; inp.accept="image/*"; inp.multiple=true;
+  inp.onchange=async()=>{
+    for(const file of inp.files){
+      const id=crypto.randomUUID();
+      await putImage(id,file);
+      meta[id]={id,name:file.name.replace(/\.[^.]+$/,""),category:"",difficulty:3,hero:3,hiso:3,weight:1,exclude:false};
+    }
+    saveMeta(); renderSettings();
+  };
+  inp.click();
+};
+
+/* ====== SETTINGS UI ====== */
+function renderSettings(){
+  const list=$("#settingsList");
+  list.innerHTML="";
+  Object.values(meta).forEach(m=>{
+    const card=document.createElement("div");
+    card.className="card";
+    card.style.position="relative";
+    const exclBtn=document.createElement("button");
+    exclBtn.textContent=m.exclude?"X":"✓";
+    exclBtn.style=`position:absolute;top:4px;right:4px;background:${m.exclude?"#c00":"#0c0"};color:#fff;border-radius:6px;padding:0 6px;font-size:12px;`;
+    exclBtn.onclick=()=>{m.exclude=!m.exclude;saveMeta();renderSettings();};
+    card.appendChild(exclBtn);
+
+    if(m.category){
+      const badge=document.createElement("div");
+      badge.textContent=m.category;
+      badge.style="position:absolute;top:4px;left:4px;background:#e2b94b;color:#000;padding:2px 6px;border-radius:6px;font-size:12px;";
+      card.appendChild(badge);
+    }
+
+    getImage(m.id).then(r=>{
+      if(r){
+        const img=document.createElement("img");
+        img.src=URL.createObjectURL(r.blob);
+        card.appendChild(img);
+      }
+      const nameInput=document.createElement("input");
+      nameInput.value=m.name;
+      nameInput.oninput=()=>{m.name=nameInput.value;saveMeta();};
+      card.appendChild(nameInput);
+
+      const catSelect=document.createElement("select");
+      catSelect.innerHTML=["",...CATS].map(c=>`<option ${m.category===c?"selected":""}>${c}</option>`).join("");
+      catSelect.onchange=()=>{m.category=catSelect.value;saveMeta();};
+      card.appendChild(catSelect);
+
+      ["difficulty","hero","hiso"].forEach(k=>{
+        const wrap=document.createElement("div");
+        wrap.innerHTML=`${k==="difficulty"?"Diff":k==="hero"?"Her-O":"His-O"}: ${starControl(m.id,k,m[k])}`;
+        card.appendChild(wrap);
+      });
+
+      const wWrap=document.createElement("div");
+      wWrap.innerHTML=`Weight: <button onclick="adjWeight('${m.id}',-1)">-</button> ${m.weight} <button onclick="adjWeight('${m.id}',1)">+</button>`;
+      card.appendChild(wWrap);
+
+      const delBtn=document.createElement("button");
+      delBtn.textContent="Delete";
+      delBtn.style="margin-top:4px;background:#c00;color:#fff;width:100%;";
+      delBtn.onclick=async()=>{delete meta[m.id];saveMeta();await deleteImage(m.id);renderSettings();};
+      card.appendChild(delBtn);
+    });
     list.appendChild(card);
   });
 }
-function updatePosName(id, newName) {
-  let pos = positions.find(p => p.id === id);
-  if (pos) { pos.name = newName; saveState(); }
+function starControl(id,key,val){
+  let html="";
+  for(let i=1;i<=5;i++){
+    html+=`<span style="cursor:pointer;color:${i<=val?"#e2b94b":"#555"}" onclick="setStar('${id}','${key}',${i})">★</span>`;
+  }
+  return html;
 }
-function closeSettings() {
-  document.getElementById('settings-overlay').classList.remove('active');
-}
-function closeRig() {
-  document.getElementById('rig-overlay').classList.remove('active');
-}
-function renderRigWeights() {
-  let rigDiv = document.getElementById('rig-weights');
-  rigDiv.innerHTML = "";
-  positions.forEach(pos => {
-    let row = document.createElement('div');
-    row.className = 'rig-category';
-    row.innerHTML = `
-      <span>${pos.category}</span>
-      <div class="weight-control">
-        <button onclick="changeWeight('${pos.id}',-1)">-</button>
-        ${pos.weight}
-        <button onclick="changeWeight('${pos.id}',1)">+</button>
-      </div>
-    `;
-    rigDiv.appendChild(row);
-  });
-}
-function changeWeight(id, delta) {
-  let pos = positions.find(p => p.id === id);
-  if (pos) { pos.weight = Math.max(0, pos.weight + delta); saveState(); renderRigWeights(); }
+window.setStar=(id,key,val)=>{meta[id][key]=val;saveMeta();renderSettings();}
+window.adjWeight=(id,delta)=>{meta[id].weight=Math.max(0,meta[id].weight+delta);saveMeta();renderSettings();}
+
+/* ====== SETTINGS PANEL ====== */
+$("#btnSettings").onclick=()=>{$("#settings").classList.add("show");renderSettings();}
+function closeSettings(){$("#settings").classList.remove("show");}
+
+/* ====== FILTER CONTROLS ====== */
+$("#oralCtrl").onclick=()=>{
+  state.oralOnly=!state.oralOnly;
+  $("#oralPill").textContent=state.oralOnly?"ON":"OFF";
+  saveState();
+};
+$("#catCtrl").onclick=()=>{
+  const sel=prompt("Select category:\n"+ALL_CATS.join("\n"),state.category);
+  if(sel && ALL_CATS.includes(sel)){
+    state.category=sel;$("#catPill").textContent=sel;saveState();
+  }
+};
+$("#timeCtrl").onclick=()=>{
+  const mins=parseInt(prompt("Timer minutes (0=Off)",state.timerMin))||0;
+  state.timerMin=mins;$("#timePill").textContent=mins?mins+"m":"Off";saveState();
+};
+
+/* ====== SPIN LOGIC ====== */
+let spinning=false,timerId=null,timeLeft=0;
+$("#spin").onclick=()=>{ if(!spinning) startSpin(); };
+
+function startSpin(){
+  const pool=getPool();
+  if(pool.length<3){alert("Not enough images");return;}
+  let chosen;
+  if(state.rig && state.queue.length>0){
+    const id=state.queue.shift();
+    chosen=meta[id];
+  } else {
+    chosen=weightedPick(pool);
+  }
+  saveState();
+  spinning=true;
+  $("#spin").disabled=true;
+  animateReels(chosen.id,pool);
 }
 
-/* ===================
-   PERSISTENCE
-   =================== */
-function saveState() {
-  localStorage.setItem('positions', JSON.stringify(positions));
-  localStorage.setItem('oralOnly', oralOnly);
-  localStorage.setItem('category', currentCategory);
-  localStorage.setItem('rigMode', rigMode);
-  localStorage.setItem('timerDuration', timerDuration);
+function getPool(){
+  let arr=Object.values(meta).filter(m=>!m.exclude && m.weight>0);
+  if(state.oralOnly) arr=arr.filter(m=>["Oral for Her","Oral for Him"].includes(m.category));
+  if(state.category==="Unassigned") arr=arr.filter(m=>!m.category);
+  else if(state.category!=="All") arr=arr.filter(m=>m.category===state.category);
+  return arr;
 }
-function loadState() {
-  positions = JSON.parse(localStorage.getItem('positions') || "[]");
-  oralOnly = localStorage.getItem('oralOnly') === "true";
-  currentCategory = localStorage.getItem('category') || "All";
-  rigMode = localStorage.getItem('rigMode') === "true";
-  timerDuration = parseInt(localStorage.getItem('timerDuration') || "0");
-  document.getElementById('oral-toggle').classList.toggle('active', oralOnly);
-  document.getElementById('main-header').classList.toggle('rig-mode', rigMode);
+function weightedPick(pool){
+  const total=pool.reduce((s,m)=>s+m.weight,0);
+  let r=Math.random()*total;
+  for(const m of pool){ if((r-=m.weight)<=0) return m; }
+  return pool[0];
 }
-loadState();
+function animateReels(chosenId,pool){
+  const reels=[$("#r1"),$("#r2"),$("#r3")];
+  reels.forEach(r=>r.classList.add("blur"));
+  const imgs=[randImg(pool),chosenId,randImg(pool,chosenId)];
+  setTimeout(()=>{
+    reels.forEach((r,i)=>{
+      getImage(imgs[i]).then(img=>{
+        if(img) r.querySelector("img").src=URL.createObjectURL(img.blob);
+      });
+    });
+    reels.forEach(r=>r.classList.remove("blur"));
+    showReveal(chosenId);
+    if(state.timerMin>0) startTimer(state.timerMin);
+    else $("#spin").disabled=false;
+    spinning=false;
+  },6000);
+}
+function randImg(pool,notId){
+  let arr=pool.map(m=>m.id);
+  if(notId) arr=arr.filter(id=>id!==notId);
+  return arr[Math.floor(Math.random()*arr.length)];
+}
+function showReveal(id){
+  const m=meta[id];
+  $("#revName").textContent=m.name;
+  $("#mDiff").textContent="★".repeat(m.difficulty)+"☆".repeat(5-m.difficulty);
+  $("#mHer").textContent="★".repeat(m.hero)+"☆".repeat(5-m.hero);
+  $("#mHis").textContent="★".repeat(m.hiso)+"☆".repeat(5-m.hiso);
+  getImage(m.id).then(r=>{ if(r) $("#revImg").src=URL.createObjectURL(r.blob); });
+}
 
+/* ====== TIMER ====== */
+function startTimer(mins){
+  timeLeft=mins*60;
+  updateTimer();
+  timerId=setInterval(()=>{
+    timeLeft--;
+    updateTimer();
+    if(timeLeft<=0){
+      clearInterval(timerId);
+      playChime();
+      $("#spin").disabled=false;
+    }
+  },1000);
+}
+function updateTimer(){
+  $("#timePill").textContent=timeLeft?Math.ceil(timeLeft/60)+"m":"Off";
+}
+
+/* ====== RIG MODE ====== */
+$("#difficultyLabel").onclick=()=>{
+  state.rig=!state.rig;
+  $("#hdr").classList.toggle("rig",state.rig);
+  saveState();
+};
+
+/* ====== SOUND ====== */
+let audioUnlocked=false;
+document.body.addEventListener("touchstart",()=>{if(!audioUnlocked){unlockAudio();audioUnlocked=true;}},{once:true});
+function unlockAudio(){
+  const ctx=new (window.AudioContext||window.webkitAudioContext)();
+  const osc=ctx.createOscillator();
+  osc.connect(ctx.destination);
+  osc.start(0);osc.stop(0.05);
+}
+function playChime(){
+  const ctx=new (window.AudioContext||window.webkitAudioContext)();
+  const osc=ctx.createOscillator();
+  const gain=ctx.createGain();
+  osc.type="triangle";osc.frequency.value=880;
+  gain.gain.setValueAtTime(0.2,ctx.currentTime);
+  osc.connect(gain);gain.connect(ctx.destination);
+  osc.start();osc.stop(ctx.currentTime+0.3);
+}
+
+/* ====== INIT ====== */
+(async()=>{
+  await openDB();
+  loadMeta();loadState();
+  $("#oralPill").textContent=state.oralOnly?"ON":"OFF";
+  $("#catPill").textContent=state.category;
+  $("#timePill").textContent=state.timerMin?state.timerMin+"m":"Off";
+  $("#hdr").classList.toggle("rig",state.rig);
+})();
 </script>
 </body>
 </html>
