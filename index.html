@@ -147,6 +147,7 @@ header.rig .title{
 <div class="controls">
   <button class="ctrl" id="oralCtrl">Oral <span class="pill" id="oralPill">OFF</span></button>
   <button class="ctrl" id="diffCtrl">Difficulty <span class="pill" id="diffPill">All</span></button>
+  <button class="ctrl hidden" id="catCtrl">Category <span class="pill" id="catPill">All</span></button>
   <button class="ctrl" id="herCtrl">Her O <span class="pill" id="herPill">All</span></button>
   <button class="ctrl" id="hisCtrl">His O <span class="pill" id="hisPill">All</span></button>
   <button class="ctrl" id="timeCtrl">Timer <span class="pill" id="timePill">Off</span></button>
@@ -259,9 +260,9 @@ let idb; let meta={}; // id->{...}
 let state={
   oralOnly:false,
   category:"All",
-  difficulty:"All",
-  herO:"All",
-  hisO:"All",
+  difficulty:[],
+  herO:[],
+  hisO:[],
   enableDiff:true,
   enableHer:true,
   enableHis:true,
@@ -280,7 +281,16 @@ const LSK="ss_meta_v1", LSS="ss_state_v1";
 function saveMeta(){localStorage.setItem(LSK,JSON.stringify(meta));}
 function loadMeta(){try{meta=JSON.parse(localStorage.getItem(LSK)||"{}");}catch{meta={};}}
 function saveState(){localStorage.setItem(LSS,JSON.stringify(state));$("#hdr").classList.toggle("rig",state.rig);}
-function loadState(){try{Object.assign(state,JSON.parse(localStorage.getItem(LSS)||"{}"));}catch{};$("#hdr").classList.toggle("rig",state.rig);}
+function loadState(){
+  try{Object.assign(state,JSON.parse(localStorage.getItem(LSS)||"{}"));}catch{}
+  ["difficulty","herO","hisO"].forEach(k=>{
+    const v=state[k];
+    if(Array.isArray(v)) return;
+    if(v===undefined||v===null||v==="All") state[k]=[];
+    else state[k]=[v];
+  });
+  $("#hdr").classList.toggle("rig",state.rig);
+}
 
 /* ===== IndexedDB ===== */
 function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open("SexySlotsDB",1);
@@ -338,12 +348,13 @@ function updateFilters(){
   $("#diffCtrl").classList.toggle("hidden",!state.enableDiff);
   $("#herCtrl").classList.toggle("hidden",!state.enableHer);
   $("#hisCtrl").classList.toggle("hidden",!state.enableHis);
+  $("#catCtrl").classList.toggle("hidden",!state.enableCat);
 }
 $("#chkDiff").addEventListener("change",e=>{state.enableDiff=e.target.checked;saveState();updateFilters();});
 $("#chkHer").addEventListener("change",e=>{state.enableHer=e.target.checked;saveState();updateFilters();});
 $("#chkHis").addEventListener("change",e=>{state.enableHis=e.target.checked;saveState();updateFilters();});
-$("#chkCat").addEventListener("change",e=>{state.enableCat=e.target.checked;saveState();$("#setCat").classList.toggle("hidden",!state.enableCat);});
-$("#setCat").addEventListener("change",e=>{state.category=e.target.value;saveState();});
+$("#chkCat").addEventListener("change",e=>{state.enableCat=e.target.checked;saveState();$("#setCat").classList.toggle("hidden",!state.enableCat);updateFilters();});
+$("#setCat").addEventListener("change",e=>{state.category=e.target.value;$("#catPill").textContent=state.category;saveState();});
 
 function renderSettings(){
   const list=$("#cards"); list.innerHTML="";
@@ -415,9 +426,9 @@ function poolNow(){ let arr=Object.values(meta).filter(m=>!m.exclude && (m.weigh
     if(state.category==="Unassigned") arr=arr.filter(m=>!m.category);
     else if(state.category!=="All") arr=arr.filter(m=>m.category===state.category);
   }
-  if(state.enableDiff && state.difficulty!=="All") arr=arr.filter(m=>(m.difficulty||0)===state.difficulty);
-  if(state.enableHer && state.herO!=="All") arr=arr.filter(m=>(m.hero||0)===state.herO);
-  if(state.enableHis && state.hisO!=="All") arr=arr.filter(m=>(m.hiso||0)===state.hisO);
+  if(state.enableDiff && state.difficulty.length) arr=arr.filter(m=>state.difficulty.includes(m.difficulty||0));
+  if(state.enableHer && state.herO.length) arr=arr.filter(m=>state.herO.includes(m.hero||0));
+  if(state.enableHis && state.hisO.length) arr=arr.filter(m=>state.hisO.includes(m.hiso||0));
   return arr;
 }
 function weighted(arr){ const sum=arr.reduce((a,b)=>a+(b.weight|0),0); let r=Math.random()*sum; for(const x of arr){ r-=(x.weight|0); if(r<=0) return x; } return arr[0]; }
@@ -485,14 +496,31 @@ $("#oralCtrl").addEventListener("click",()=>{state.oralOnly=!state.oralOnly;$("#
 $("#diffCtrl").addEventListener("click",()=>showStarPicker("Difficulty","difficulty","#diffPill"));
 $("#herCtrl").addEventListener("click",()=>showStarPicker("Her O meter","herO","#herPill"));
 $("#hisCtrl").addEventListener("click",()=>showStarPicker("His O meter","hisO","#hisPill"));
+$("#catCtrl").addEventListener("click",showCatPicker);
+function pillLabel(arr){ if(!arr || arr.length===0) return 'All'; const s=[...arr].sort((a,b)=>a-b); return s.length===1? '★'.repeat(s[0]) : `${s[0]}-${s[s.length-1]}`; }
 function showStarPicker(title,key,pill){
   const ov=document.createElement('div'); ov.className='overlay show';
   const sheet=document.createElement('div'); sheet.className='sheet'; sheet.style.inset='calc(env(safe-area-inset-top) + 2rem) .8rem 1.2rem';
-  sheet.innerHTML=`<header><div class="small">${title}</div><button class="btn" id="spClose">Close</button></header><div class="content" id="spList"></div>`;
+  sheet.innerHTML=`<header><div class="small">${title}</div><button class="btn" id="spDone">Done</button></header><div class="content" id="spList"></div>`;
   ov.appendChild(sheet); document.body.appendChild(ov);
-  $("#spClose").onclick=()=>ov.remove();
-  const list=$("#spList"), opts=["All",1,2,3,4,5];
-  opts.forEach(val=>{const b=document.createElement('button'); b.className='btn'; b.style.cssText='display:block;width:100%;text-align:left;margin:.25rem 0'; const label=val==="All"?"All":"★".repeat(val); b.textContent=(state[key]===val?'✓ ':'')+label; b.onclick=()=>{state[key]=val; saveState(); $(pill).textContent=label; ov.remove();}; list.appendChild(b);});
+  const sel=new Set(state[key]);
+  function render(){
+    const list=$("#spList"); list.innerHTML="";
+    const allBtn=document.createElement('button'); allBtn.className='btn'; allBtn.style.cssText='display:block;width:100%;text-align:left;margin:.25rem 0'; allBtn.textContent=(sel.size===0?'✓ ':'')+"All"; allBtn.onclick=()=>{sel.clear(); render();}; list.appendChild(allBtn);
+    for(let i=1;i<=5;i++){
+      const b=document.createElement('button'); b.className='btn'; b.style.cssText='display:block;width:100%;text-align:left;margin:.25rem 0'; const label='★'.repeat(i); b.textContent=(sel.has(i)?'✓ ':'')+label; b.onclick=()=>{ if(sel.has(i)) sel.delete(i); else sel.add(i); render(); }; list.appendChild(b); }
+  }
+  render();
+  $("#spDone").onclick=()=>{state[key]=Array.from(sel).sort(); $(pill).textContent=pillLabel(state[key]); saveState(); ov.remove();};
+}
+function showCatPicker(){
+  const ov=document.createElement('div'); ov.className='overlay show';
+  const sheet=document.createElement('div'); sheet.className='sheet'; sheet.style.inset='calc(env(safe-area-inset-top) + 2rem) .8rem 1.2rem';
+  sheet.innerHTML=`<header><div class="small">Category</div><button class="btn" id="catClose">Close</button></header><div class="content" id="catList"></div>`;
+  ov.appendChild(sheet); document.body.appendChild(ov);
+  $("#catClose").onclick=()=>ov.remove();
+  const list=$("#catList");
+  ALL_CATS.forEach(val=>{const b=document.createElement('button'); b.className='btn'; b.style.cssText='display:block;width:100%;text-align:left;margin:.25rem 0'; b.textContent=(state.category===val?'✓ ':'')+val; b.onclick=()=>{state.category=val; $("#catPill").textContent=val; saveState(); ov.remove();}; list.appendChild(b);});
 }
 /* Timer picker overlay */
 $("#timeCtrl").addEventListener("click", showTimerPicker);
@@ -533,9 +561,10 @@ function toast(msg){const t=document.createElement('div'); t.className='toast'; 
 (async function(){
   await openDB(); loadMeta(); loadState();
   $("#oralPill").textContent=state.oralOnly?'ON':'OFF';
-  $("#diffPill").textContent=state.difficulty==="All"?"All":"★".repeat(state.difficulty);
-  $("#herPill").textContent=state.herO==="All"?"All":"★".repeat(state.herO);
-  $("#hisPill").textContent=state.hisO==="All"?"All":"★".repeat(state.hisO);
+  $("#diffPill").textContent=pillLabel(state.difficulty);
+  $("#herPill").textContent=pillLabel(state.herO);
+  $("#hisPill").textContent=pillLabel(state.hisO);
+  $("#catPill").textContent=state.category;
   $("#timePill").textContent=state.timerMin? (state.timerMin+'m') : 'Off';
   updateFilters();
 })();
