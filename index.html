@@ -17,14 +17,22 @@
   --text:#f5f5f7; --muted:#b8b8c0; --gold:#e2b94b; --pink:#ff3b66;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;margin:0;background:var(--bg);color:var(--text);
-  font-family:-apple-system,BlinkMacSystemFont,"SF Pro",Roboto,system-ui,sans-serif;overflow:auto;touch-action:manipulation}
+html,body{
+  height:100%; margin:0; background:var(--bg); color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro",Roboto,system-ui,sans-serif;
+  overflow:auto; touch-action:manipulation;
+}
 button{border:0;background:none;color:inherit;font:inherit;cursor:pointer;touch-action:manipulation}
 input,select{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:.5em .7em;min-height:44px}
-.safe{height:calc(env(safe-area-inset-top) + 0.2cm)}
+.safe{height:calc(env(safe-area-inset-top) + 0.2cm)} /* snug per your last tweak */
 .hidden{display:none!important}
 
 /* header */
+header{
+  position:sticky; top:0; z-index:30; display:flex; align-items:center; justify-content:space-between;
+  padding:.25rem .6rem; background:rgba(0,0,0,.85); backdrop-filter:blur(8px); border-bottom:1px solid var(--line)
+}
+.hamb{width:44px;height:44px;display:grid;place-items:center;border-radius:10px}
 .title{
   font-weight:900; letter-spacing:.3px;
   background:linear-gradient(180deg,#fff,#e8e8f2 45%,#c9c9d9);
@@ -40,8 +48,7 @@ header.rig .title{
 .title::after{
   content:""; position:absolute; left:50%; transform:translateX(-50%);
   bottom:-6px; width:64px; height:3px; border-radius:3px;
-  background:linear-gradient(90deg,transparent,#e2b94b,transparent);
-  opacity:.7;
+  background:linear-gradient(90deg,transparent,#e2b94b,transparent); opacity:.7;
 }
 
 /* controls */
@@ -57,11 +64,7 @@ header.rig .title{
   box-shadow:0 10px 24px rgba(255,59,102,.25), inset 0 1px 0 rgba(255,255,255,.12);
   position:relative; overflow:hidden;
 }
-#spin::before{ /* soft shine */
-  content:""; position:absolute; inset:0;
-  background:linear-gradient(180deg,rgba(255,255,255,.18),transparent 45%);
-  pointer-events:none;
-}
+#spin::before{content:""; position:absolute; inset:0; background:linear-gradient(180deg,rgba(255,255,255,.18),transparent 45%); pointer-events:none;}
 #spin:active{ transform:translateY(1px); box-shadow:0 8px 16px rgba(255,59,102,.22), inset 0 1px 0 rgba(255,255,255,.05); }
 #spin[disabled]{opacity:.4}
 
@@ -73,7 +76,7 @@ header.rig .title{
 .reel img{width:100%;height:100%;object-fit:cover}
 
 /* reveal */
-.reveal{flex:1;display:flex;flex-direction:column;overflow:auto}
+.reveal{flex:1;display:flex;flex-direction:column;overflow:auto; -webkit-overflow-scrolling:touch;}
 .name{padding:.45rem .9rem;text-align:center;font-weight:800}
 .big{flex:1;display:grid;place-items:center;padding:.2rem .7rem}
 .big img{width:100%;max-height:54vh;object-fit:contain;border-radius:14px;background:#0e0e12}
@@ -94,7 +97,7 @@ header.rig .title{
 .overlay.show{display:block}
 .sheet{position:absolute;inset:calc(env(safe-area-inset-top) + 1rem) .6rem 1rem;background:var(--panel2);border:1px solid var(--line);border-radius:16px;display:flex;flex-direction:column;overflow:hidden}
 .sheet>header{display:flex;align-items:center;gap:.5rem;justify-content:space-between;padding:.55rem;border-bottom:1px solid var(--line)}
-.sheet .content{flex:1;min-height:0;overflow:auto;padding:.6rem}
+.sheet .content{flex:1;min-height:0;overflow:auto;padding:.6rem; -webkit-overflow-scrolling:touch;}
 .small{font-size:12px;color:#b8b8c0}
 
 /* settings */
@@ -127,11 +130,6 @@ header.rig .title{
 
 /* util */
 .toast{position:fixed;left:50%;bottom:18vh;transform:translateX(-50%);background:#111;border:1px solid var(--line);padding:10px 14px;border-radius:12px;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.36)}
-
-/* ensure inner lists keep scrolling on iOS */
-.reveal{ -webkit-overflow-scrolling: touch; }
-.sheet .content{ -webkit-overflow-scrolling: touch; }
-
 </style>
 </head>
 <body>
@@ -164,7 +162,8 @@ header.rig .title{
     <div class="meter"><div class="label">Her‑O Meter</div><div class="stars" id="mHer">☆☆☆☆☆</div></div>
     <div class="meter"><div class="label">His‑O Meter</div><div class="stars" id="mHis">☆☆☆☆☆</div></div>
   </div>
-    <!-- Hidden description -->
+
+  <!-- Hidden Description (per-image) -->
   <div class="desc" id="descBox" style="padding:0 .9rem 1rem;">
     <button class="btn" id="descToggle">Show description</button>
     <div class="desc-body hidden" id="descBody" style="margin-top:.5rem;">
@@ -181,6 +180,7 @@ header.rig .title{
       </div>
     </div>
   </div>
+
   <div class="tbar hidden" id="tbar">
     <div class="timer">
       <div><span class="badge" id="tBadge">0:00</span> <span class="small" id="tNote">Timer running…</span></div>
@@ -237,46 +237,31 @@ header.rig .title{
 </div>
 
 <script>
-/* =============== State & persistence =============== */
+/* ===== State & Persistence ===== */
 const CATS=["Missionary","Woman-on-top","Oral for Her","Oral for Him","Sitting","Standing","Side-by-Side","Deep Penetration","69","Rear Entry","BDSM for Lovers","Adventurous"];
 const ALL_CATS=["All","Unassigned",...CATS];
 const PIN="1616";
-
-const $=s=>document.querySelector(s);
-const $$=s=>Array.from(document.querySelectorAll(s));
-
-let idb;
-let meta={}; // id -> {id,name,category,difficulty,hero,hiso,weight,exclude}
-let state={
-  oralOnly:false, category:"All", timerMin:0,
-  rig:false, flows:[[],[],[],[],[],[],[]], flowIndex:0,
-  fCat:"All", fW0:false, bulkCat:"", bulkMode:false
-};
-
+const $=s=>document.querySelector(s); const $$=s=>Array.from(document.querySelectorAll(s));
+let idb; let meta={}; // id->{...}
+let state={oralOnly:false,category:"All",timerMin:0,rig:false,flows:[[],[],[],[],[],[],[]],flowIndex:0,fCat:"All",fW0:false,bulkCat:"",bulkMode:false};
+let currentId=null;
 const LSK="ss_meta_v1", LSS="ss_state_v1";
 function saveMeta(){localStorage.setItem(LSK,JSON.stringify(meta));}
 function loadMeta(){try{meta=JSON.parse(localStorage.getItem(LSK)||"{}");}catch{meta={};}}
 function saveState(){localStorage.setItem(LSS,JSON.stringify(state));$("#hdr").classList.toggle("rig",state.rig);}
 function loadState(){try{Object.assign(state,JSON.parse(localStorage.getItem(LSS)||"{}"));}catch{};$("#hdr").classList.toggle("rig",state.rig);}
 
-/* =============== IndexedDB =============== */
-function openDB(){return new Promise((res,rej)=>{
-  const r=indexedDB.open("SexySlotsDB",1);
+/* ===== IndexedDB ===== */
+function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open("SexySlotsDB",1);
   r.onupgradeneeded=e=>{const db=e.target.result;if(!db.objectStoreNames.contains("images"))db.createObjectStore("images",{keyPath:"id"});};
-  r.onsuccess=()=>{idb=r.result;res();}; r.onerror=()=>rej(r.error);
-});}
+  r.onsuccess=()=>{idb=r.result;res();}; r.onerror=()=>rej(r.error);});}
 function idbPut(id,blob){return new Promise((res,rej)=>{const tx=idb.transaction("images","readwrite");tx.objectStore("images").put({id,blob});tx.oncomplete=res;tx.onerror=()=>rej(tx.error);});}
 function idbGet(id){return new Promise((res,rej)=>{const tx=idb.transaction("images","readonly");const g=tx.objectStore("images").get(id);g.onsuccess=()=>res(g.result);g.onerror=()=>rej(g.error);});}
 function idbDel(id){return new Promise((res,rej)=>{const tx=idb.transaction("images","readwrite");tx.objectStore("images").delete(id);tx.oncomplete=res;tx.onerror=()=>rej(tx.error);});}
 
-/* =============== Upload (100+ with progress) =============== */
-$("#btnUpload").addEventListener("click",()=>{
-  const inp=document.createElement("input");inp.type="file";inp.accept="image/*";inp.multiple=true;
-  inp.onchange=()=>{if(inp.files?.length) batchImport(Array.from(inp.files));};
-  inp.click();
-});
+/* ===== Upload (100+ with progress) ===== */
+$("#btnUpload").addEventListener("click",()=>{const inp=document.createElement("input");inp.type="file";inp.accept="image/*";inp.multiple=true;inp.onchange=()=>{if(inp.files?.length) batchImport(Array.from(inp.files));};inp.click();});
 function makeId(){try{return crypto.randomUUID();}catch{return Date.now()+"-"+Math.random().toString(16).slice(2);}}
-
 async function batchImport(files){
   const ov=document.createElement("div");ov.style.cssText="position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;color:#fff;";
   ov.innerHTML=`<div style="background:#1c1c22;border:1px solid #2a2a36;padding:16px 18px;border-radius:12px;min-width:260px;text-align:center">
@@ -286,46 +271,26 @@ async function batchImport(files){
   document.body.appendChild(ov);
   let cancelled=false; ov.querySelector("#pcancel").onclick=()=>{cancelled=true;};
   const ptext=ov.querySelector("#ptext"), pbar=ov.querySelector("#pbar");
-
-  let done=0, ok=0; for(const f of files){ if(cancelled) break;
+  let done=0, ok=0;
+  for(const f of files){ if(cancelled) break;
     done++; ptext.textContent=`Importing ${done} of ${files.length}…`; pbar.style.width=Math.round(done/files.length*100)+"%";
-    try{ const id=makeId(); await idbPut(id,f);
+    try{const id=makeId(); await idbPut(id,f);
       meta[id]={id,name:(f.name||"").replace(/\.[^.]+$/,""),category:"",difficulty:3,hero:3,hiso:3,weight:1,exclude:false,desc:""}; ok++;
       await new Promise(r=>requestAnimationFrame(r));
-    }catch(e){ console.warn("Import fail",e); }
+    }catch(e){console.warn("Import fail",e);}
   }
-  saveMeta(); document.body.removeChild(ov); toast(cancelled?`Cancelled (${ok} saved)`:`Imported ${ok}`);
-  renderSettings(); renderWeights();
+  saveMeta(); document.body.removeChild(ov); toast(cancelled?`Cancelled (${ok} saved)`:`Imported ${ok}`); renderSettings(); renderWeights();
 }
 
-/* =============== Settings UI & filters =============== */
+/* ===== Settings & Filters ===== */
 $("#btnSettings").addEventListener("click",openSettings);
 $("#btnCloseSettings").addEventListener("click",()=>$("#settings").classList.remove("show"));
-
-function openSettings(){
-  $("#settings").classList.add("show");
-  fillSelect($("#fCat"),ALL_CATS,state.fCat);
-  $("#fW0").classList.toggle("active",state.fW0);
-  fillSelect($("#bulkCat"),["",...CATS],state.bulkCat);
-  renderSettings();
-}
+function openSettings(){ $("#settings").classList.add("show"); fillSelect($("#fCat"),ALL_CATS,state.fCat); $("#fW0").classList.toggle("active",state.fW0); fillSelect($("#bulkCat"),["",...CATS],state.bulkCat); renderSettings(); }
 $("#fCat").addEventListener("change",e=>{state.fCat=e.target.value;saveState();renderSettings();});
 $("#fW0").addEventListener("click",()=>{state.fW0=!state.fW0;saveState();$("#fW0").classList.toggle("active",state.fW0);renderSettings();});
 $("#bulkCat").addEventListener("change",e=>{state.bulkCat=e.target.value;saveState();});
-$("#bulkApply").addEventListener("click",()=>{
-  if(!state.bulkMode){
-    if(!state.bulkCat){toast("Choose a category first");return;}
-    state.bulkMode=true; saveState(); toast("Bulk ON: tap cards to assign");
-  }else{
-    state.bulkMode=false; saveState(); toast("Bulk OFF");
-  }
-  renderSettings();
-});
-$("#cards").addEventListener("click",(e)=>{
-  if(!state.bulkMode) return;
-  const card=e.target.closest(".card"); if(!card) return;
-  const id=card.dataset.id; meta[id].category=state.bulkCat; saveMeta(); renderSettings(); renderWeights();
-});
+$("#bulkApply").addEventListener("click",()=>{ if(!state.bulkMode){ if(!state.bulkCat){toast("Choose a category first");return;} state.bulkMode=true; saveState(); toast("Bulk ON: tap cards to assign"); } else { state.bulkMode=false; saveState(); toast("Bulk OFF"); } renderSettings(); });
+$("#cards").addEventListener("click",(e)=>{ if(!state.bulkMode) return; const card=e.target.closest(".card"); if(!card) return; const id=card.dataset.id; meta[id].category=state.bulkCat; saveMeta(); renderSettings(); renderWeights(); });
 
 function renderSettings(){
   const list=$("#cards"); list.innerHTML="";
@@ -360,14 +325,10 @@ function renderSettings(){
   if(state.bulkMode){ $("#bulkApply").textContent="Exit Bulk"; $$(".card").forEach(c=>c.classList.add("bulk")); }
   else $("#bulkApply").textContent="Tap-to-Apply";
 }
-function starRow(label,key,m){
-  const row=el('div','starrow'); row.append(text(label),spacer());
-  for(let i=1;i<=5;i++){const b=el('div','s'+(i<=m[key]?' lit':''),'★'); b.addEventListener('click',()=>{m[key]=i;saveMeta();renderSettings();renderWeights();}); row.append(b);}
-  return row;
-}
+function starRow(label,key,m){ const row=el('div','starrow'); row.append(text(label),spacer()); for(let i=1;i<=5;i++){const b=el('div','s'+(i<=m[key]?' lit':''),'★'); b.addEventListener('click',()=>{m[key]=i;saveMeta();renderSettings();renderWeights();}); row.append(b);} return row; }
 function labelRow(lbl,control){const wrap=el('div','starrow'); wrap.append(text(lbl),spacer(),control); return wrap;}
 
-/* =============== Rig Mode =============== */
+/* ===== Rig Mode ===== */
 $("#difficultyLabel").addEventListener("click",()=>{state.rig=!state.rig;saveState();toast(state.rig?'Rig ON':'Rig OFF');});
 $("#btnRig").addEventListener("click",()=>{const pin=prompt("Enter PIN"); if(pin===PIN){openRig();} else if(pin!=null){toast("Wrong PIN");}});
 $("#btnCloseRig").addEventListener("click",()=>$("#rig").classList.remove("show"));
@@ -391,13 +352,11 @@ function renderWeights(){
   });
 }
 
-/* =============== Spin + animation + timer + sound =============== */
-let currentId=null;
+/* ===== Spin + animation + timer + sound ===== */
 let spinning=false, timerId=null, remain=0;
 $("#spin").addEventListener("click",()=>{ if(!spinning && !timerId) spin(); });
 
-function poolNow(){
-  let arr=Object.values(meta).filter(m=>!m.exclude && (m.weight|0)>0);
+function poolNow(){ let arr=Object.values(meta).filter(m=>!m.exclude && (m.weight|0)>0);
   if(state.oralOnly) arr=arr.filter(m=>m.category==="Oral for Her"||m.category==="Oral for Him");
   if(state.category==="Unassigned") arr=arr.filter(m=>!m.category);
   else if(state.category!=="All") arr=arr.filter(m=>m.category===state.category);
@@ -407,18 +366,13 @@ function weighted(arr){ const sum=arr.reduce((a,b)=>a+(b.weight|0),0); let r=Mat
 function randOther(pool,notId){ const cand=pool.filter(m=>m.id!==notId); return (cand[Math.floor(Math.random()*cand.length)]||pool[0]||{id:notId}).id; }
 
 function spin(){
-  const pool=poolNow();
-  if(pool.length===0){toast("No images match filters");return;}
-  let chosen;
-  if(state.rig && state.flows[state.flowIndex].length){ const id=state.flows[state.flowIndex].shift(); chosen=meta[id]; saveState(); renderFlowList(); }
-  else { chosen=weighted(pool); }
+  const pool=poolNow(); if(pool.length===0){toast("No images match filters");return;}
+  let chosen; if(state.rig && state.flows[state.flowIndex].length){ const id=state.flows[state.flowIndex].shift(); chosen=meta[id]; saveState(); renderFlowList(); } else { chosen=weighted(pool); }
 
   spinning=true; $("#spin").disabled=true;
   const reels=[$("#reel1"),$("#reel2"),$("#reel3")];
-  const dur=[5400,6000,5700];
-  const ids=pool.map(m=>m.id); if(!ids.length) ids.push(chosen.id);
-  const left=randOther(pool,chosen.id), right=randOther(pool,chosen.id);
-  const stopIds=[left,chosen.id,right];
+  const dur=[5400,6000,5700]; const ids=pool.map(m=>m.id); if(!ids.length) ids.push(chosen.id);
+  const stopIds=[randOther(pool,chosen.id), chosen.id, randOther(pool,chosen.id)];
   reels.forEach(r=>r.classList.add("blur"));
 
   const start=performance.now(); const speed0=26;
@@ -437,15 +391,12 @@ function spin(){
         reel.classList.remove("blur");
       }
     });
-    if(t<Math.max(...dur)) requestAnimationFrame(step);
-    else finishSpin(chosen);
+    if(t<Math.max(...dur)) requestAnimationFrame(step); else finishSpin(chosen);
   }
   requestAnimationFrame(step);
 
   unlockAudioOnce(); spinTick();
 }
-
-let currentId=m.id;
 
 function finishSpin(m){
   $("#revName").textContent=m.name||"Untitled";
@@ -453,24 +404,15 @@ function finishSpin(m){
   $("#mHer").textContent="★".repeat(m.hero||1)+"☆".repeat(5-(m.hero||1));
   $("#mHis").textContent="★".repeat(m.hiso||1)+"☆".repeat(5-(m.hiso||1));
   idbGet(m.id).then(r=>{if(r) $("#revImg").src=URL.createObjectURL(r.blob);});
-  currentId = m.id;
-  populateDesc();            // ← new
+  currentId=m.id; populateDesc();
   spinning=false;
   if(state.timerMin>0) startTimer(state.timerMin*60);
   else $("#spin").disabled=false;
 }
 
 /* timer */
-function startTimer(s){
-  if(timerId) clearInterval(timerId);
-  remain=s|0; $("#tbar").classList.remove("hidden"); tickTimer();
-  timerId=setInterval(tickTimer,1000);
-}
-function tickTimer(){
-  const mm=Math.floor(remain/60), ss=(remain%60).toString().padStart(2,'0');
-  $("#tBadge").textContent=`${mm}:${ss}`; remain--;
-  if(remain<0){ clearInterval(timerId); timerId=null; $("#tbar").classList.add("hidden"); chime(); $("#spin").disabled=false; }
-}
+function startTimer(s){ if(timerId) clearInterval(timerId); remain=s|0; $("#tbar").classList.remove("hidden"); tickTimer(); timerId=setInterval(tickTimer,1000); }
+function tickTimer(){ const mm=Math.floor(remain/60), ss=(remain%60).toString().padStart(2,'0'); $("#tBadge").textContent=`${mm}:${ss}`; remain--; if(remain<0){ clearInterval(timerId); timerId=null; $("#tbar").classList.add("hidden"); chime(); $("#spin").disabled=false; } }
 $("#tSkip").addEventListener("click",()=>{ if(!timerId)return; clearInterval(timerId); timerId=null; $("#tbar").classList.add("hidden"); $("#spin").disabled=false; });
 $("#tCancel").addEventListener("click",()=>{ if(!timerId)return; clearInterval(timerId); timerId=null; $("#tbar").classList.add("hidden"); });
 
@@ -480,31 +422,9 @@ function unlockAudioOnce(){ if(audioReady) return; try{ ac=new (window.AudioCont
 function spinTick(){ if(!ac) return; const o=ac.createOscillator(), g=ac.createGain(); o.type='triangle'; o.frequency.value=240; g.gain.value=.05; o.connect(g); g.connect(ac.destination); o.start(); o.stop(ac.currentTime+.08); }
 function chime(){ if(!ac) return; const o=ac.createOscillator(), g=ac.createGain(); o.type='sine'; o.frequency.setValueAtTime(880, ac.currentTime); g.gain.value=.12; o.connect(g); g.connect(ac.destination); o.start(); o.stop(ac.currentTime+.22); }
 
-/* Top controls */
+/* top controls */
 $("#oralCtrl").addEventListener("click",()=>{state.oralOnly=!state.oralOnly;$("#oralPill").textContent=state.oralOnly?'ON':'OFF';saveState();});
-$("#timeCtrl").addEventListener("click", showTimerPicker);
-
-function showTimerPicker(){
-  const ov=document.createElement('div'); ov.className='overlay show';
-  const sheet=document.createElement('div'); sheet.className='sheet';
-  sheet.style.inset='calc(env(safe-area-inset-top) + 2rem) .8rem 1.2rem';
-  sheet.innerHTML=`<header><div class="small">Timer</div><button class="btn" id="tpClose">Close</button></header><div class="content" id="tpList"></div>`;
-  ov.appendChild(sheet); document.body.appendChild(ov);
-  $("#tpClose").onclick=()=>ov.remove();
-
-  const opts=[0,1,2,3,4,5];
-  const list=$("#tpList");
-  opts.forEach(min=>{
-    const b=document.createElement('button');
-    b.className='btn';
-    b.style.cssText='display:block;width:100%;text-align:left;margin:.25rem 0';
-    b.textContent=(state.timerMin===min?'✓ ':'') + (min? `${min} minute${min>1?'s':''}` : 'Off');
-    b.onclick=()=>{ state.timerMin=min; $("#timePill").textContent=min? (min+'m'):'Off'; saveState(); ov.remove(); };
-    list.appendChild(b);
-  });
-}
-
-/* Category picker overlay (no typing) */
+/* Category picker overlay */
 $("#catCtrl").addEventListener("click",showCategoryPicker);
 function showCategoryPicker(){
   const ov=document.createElement('div'); ov.className='overlay show';
@@ -512,13 +432,34 @@ function showCategoryPicker(){
   sheet.innerHTML=`<header><div class="small">Choose Category</div><button class="btn" id="cpClose">Close</button></header><div class="content" id="cpList"></div>`;
   ov.appendChild(sheet); document.body.appendChild(ov);
   $("#cpClose").onclick=()=>ov.remove();
-  const list=$("#cpList");
-  ALL_CATS.forEach(c=>{
-    const b=document.createElement('button'); b.className='btn'; b.style.cssText='display:block;width:100%;text-align:left;margin:.25rem 0';
-    b.textContent=(c===state.category?'✓ ':'')+c; b.onclick=()=>{state.category=c; saveState(); $("#catPill").textContent=c; ov.remove();};
-    list.appendChild(b);
-  });
+  const list=$("#cpList"); ALL_CATS.forEach(c=>{ const b=document.createElement('button'); b.className='btn'; b.style.cssText='display:block;width:100%;text-align:left;margin:.25rem 0'; b.textContent=(c===state.category?'✓ ':'')+c; b.onclick=()=>{state.category=c; saveState(); $("#catPill").textContent=c; ov.remove();}; list.appendChild(b); });
 }
+/* Timer picker overlay */
+$("#timeCtrl").addEventListener("click", showTimerPicker);
+function showTimerPicker(){
+  const ov=document.createElement('div'); ov.className='overlay show';
+  const sheet=document.createElement('div'); sheet.className='sheet'; sheet.style.inset='calc(env(safe-area-inset-top) + 2rem) .8rem 1.2rem';
+  sheet.innerHTML=`<header><div class="small">Timer</div><button class="btn" id="tpClose">Close</button></header><div class="content" id="tpList"></div>`;
+  ov.appendChild(sheet); document.body.appendChild(ov);
+  $("#tpClose").onclick=()=>ov.remove();
+  const opts=[0,1,2,3,4,5]; const list=$("#tpList");
+  opts.forEach(min=>{ const b=document.createElement('button'); b.className='btn'; b.style.cssText='display:block;width:100%;text-align:left;margin:.25rem 0'; b.textContent=(state.timerMin===min?'✓ ':'')+(min?`${min} minute${min>1?'s':''}`:'Off'); b.onclick=()=>{state.timerMin=min; $("#timePill").textContent=min? (min+'m'):'Off'; saveState(); ov.remove();}; list.appendChild(b); });
+}
+
+/* Description UI */
+const descToggle=$("#descToggle"), descBody=$("#descBody"),
+      descText=$("#descText"), descEdit=$("#descEdit"),
+      descArea=$("#descArea"), descSave=$("#descSave"),
+      descCancel=$("#descCancel"), descEditBtn=$("#descEditBtn");
+function populateDesc(){
+  const d=(currentId && meta[currentId] && typeof meta[currentId].desc==="string")? meta[currentId].desc : "";
+  descText.textContent=d||"No description yet."; descArea.value=d||"";
+  descBody.classList.add("hidden"); descEdit.classList.add("hidden"); descToggle.textContent="Show description";
+}
+descToggle.addEventListener("click",()=>{ const open=!descBody.classList.contains("hidden"); if(open){ descBody.classList.add("hidden"); descToggle.textContent="Show description"; } else { descBody.classList.remove("hidden"); descToggle.textContent="Hide description"; }});
+descEditBtn.addEventListener("click",()=>{ descEdit.classList.remove("hidden"); descArea.focus(); });
+descCancel.addEventListener("click",()=>{ descEdit.classList.add("hidden"); const d=(currentId && meta[currentId])? (meta[currentId].desc||""):""; descArea.value=d; });
+descSave.addEventListener("click",()=>{ if(!currentId || !meta[currentId]) return; meta[currentId].desc=(descArea.value||"").trim(); saveMeta(); descText.textContent=meta[currentId].desc||"No description yet."; descEdit.classList.add("hidden"); });
 
 /* helpers */
 function el(tag,cls,html){const e=document.createElement(tag); if(cls) e.className=cls; if(html!=null) e.innerHTML=html; return e;}
@@ -535,50 +476,6 @@ function toast(msg){const t=document.createElement('div'); t.className='toast'; 
   $("#catPill").textContent=state.category;
   $("#timePill").textContent=state.timerMin? (state.timerMin+'m') : 'Off';
 })();
-
-// description UI
-const descToggle=$("#descToggle"), descBody=$("#descBody"),
-      descText=$("#descText"), descEdit=$("#descEdit"),
-      descArea=$("#descArea"), descSave=$("#descSave"),
-      descCancel=$("#descCancel"), descEditBtn=$("#descEditBtn");
-
-function populateDesc(){
-  const d = (currentId && meta[currentId] && typeof meta[currentId].desc==="string")
-            ? meta[currentId].desc : "";
-  descText.textContent = d || "No description yet.";
-  descArea.value = d || "";
-  // reset to view mode each time
-  descBody.classList.add("hidden");
-  descEdit.classList.add("hidden");
-  descToggle.textContent="Show description";
-}
-
-descToggle.addEventListener("click",()=>{
-  const open = !descBody.classList.contains("hidden");
-  if(open){ descBody.classList.add("hidden"); descToggle.textContent="Show description"; }
-  else    { descBody.classList.remove("hidden"); descToggle.textContent="Hide description"; }
-});
-
-descEditBtn.addEventListener("click",()=>{
-  descEdit.classList.remove("hidden");
-  descArea.focus();
-});
-
-descCancel.addEventListener("click",()=>{
-  descEdit.classList.add("hidden");
-  // revert text area to stored value
-  const d=(currentId && meta[currentId])? (meta[currentId].desc||"") : "";
-  descArea.value=d;
-});
-
-descSave.addEventListener("click",()=>{
-  if(!currentId || !meta[currentId]) return;
-  meta[currentId].desc = descArea.value.trim();
-  saveMeta();
-  descText.textContent = meta[currentId].desc || "No description yet.";
-  descEdit.classList.add("hidden");
-});
-
 </script>
 </body>
 </html>
