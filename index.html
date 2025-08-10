@@ -17,10 +17,20 @@
   --text:#f5f5f7; --muted:#b8b8c0; --gold:#e2b94b; --pink:#ff3b66;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{
-  height:100%; margin:0; background:var(--bg); color:var(--text);
+html{
+  height:-webkit-fill-available;
+}
+body{
+  min-height:100vh;
+  min-height:-webkit-fill-available;
+  margin:0;
+  background:radial-gradient(circle at top left,#1a1a22,var(--bg)) fixed;
+  background-color:var(--bg);
+  color:var(--text);
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro",Roboto,system-ui,sans-serif;
-  overflow:auto; touch-action:manipulation;
+  overflow:auto;
+  touch-action:manipulation;
+  padding-bottom:env(safe-area-inset-bottom);
 }
 button{border:0;background:none;color:inherit;font:inherit;cursor:pointer;touch-action:manipulation}
 input,select{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:.5em .7em;min-height:44px}
@@ -53,19 +63,22 @@ header.rig .title{
 
 /* controls */
 .controls{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;padding:.6rem}
-.ctrl{background:var(--panel2);border-radius:12px;min-height:44px;display:flex;align-items:center;justify-content:center;gap:.45rem}
+.ctrl{background:var(--panel2);border-radius:12px;min-height:44px;display:flex;align-items:center;justify-content:center;gap:.45rem;transition:background .2s,color .2s,transform .2s}
 .ctrl .pill{background:#2a2a36;border-radius:999px;padding:.05em .55em;font-size:12px;color:#ddd}
+.ctrl:hover{background:var(--panel);transform:translateY(-1px)}
+.ctrl:active{transform:scale(.97)}
 .ctrl.active{background:var(--gold);color:#000}
 .spinwrap{padding:.3rem .6rem}
 #spin{
   width:100%; min-height:56px; border-radius:16px;
   background:linear-gradient(180deg,#ff5078 0%,#ff3b66 40%,#c50d40 100%);
   font-weight:900; letter-spacing:.35px; color:#fff;
-  box-shadow:0 10px 24px rgba(255,59,102,.25), inset 0 1px 0 rgba(255,255,255,.12);
-  position:relative; overflow:hidden;
-}
-#spin::before{content:""; position:absolute; inset:0; background:linear-gradient(180deg,rgba(255,255,255,.18),transparent 45%); pointer-events:none;}
-#spin:active{ transform:translateY(1px); box-shadow:0 8px 16px rgba(255,59,102,.22), inset 0 1px 0 rgba(255,255,255,.05); }
+    box-shadow:0 10px 24px rgba(255,59,102,.25), inset 0 1px 0 rgba(255,255,255,.12);
+    position:relative; overflow:hidden; transition:transform .2s, box-shadow .2s;
+  }
+  #spin::before{content:""; position:absolute; inset:0; background:linear-gradient(180deg,rgba(255,255,255,.18),transparent 45%); pointer-events:none;}
+  #spin:hover{ transform:translateY(-1px); box-shadow:0 12px 28px rgba(255,59,102,.35), inset 0 1px 0 rgba(255,255,255,.18); }
+  #spin:active{ transform:translateY(1px); box-shadow:0 8px 16px rgba(255,59,102,.22), inset 0 1px 0 rgba(255,255,255,.05); }
 #spin[disabled]{opacity:.4}
 
 /* reels */
@@ -111,7 +124,7 @@ header.rig .title{
 .inctgl.off{background:#71222a;color:#ff9bb0}
 .body{padding:.5rem;display:flex;flex-direction:column;gap:.35rem}
 .starrow{display:flex;align-items:center;gap:.25rem}
-.starrow .s{width:28px;height:28px;border-radius:8px;background:#2a2a36;display:grid;place-items:center}
+.starrow .s{width:28px;height:28px;border-radius:8px;background:#2a2a36;display:grid;place-items:center;cursor:pointer}
 .starrow .lit{color:var(--gold)}
 .card.bulk{outline:2px dashed var(--gold); outline-offset:2px}
 
@@ -141,9 +154,11 @@ header.rig .title{
 </header>
 
 <div class="controls">
-  <button class="ctrl" id="oralCtrl">Oral <span class="pill" id="oralPill">OFF</span></button>
-  <button class="ctrl" id="catCtrl">Category <span class="pill" id="catPill">All</span></button>
-  <button class="ctrl" id="timeCtrl">Timer <span class="pill" id="timePill">Off</span></button>
+  <button class="ctrl" id="oralCtrl">👄 Oral <span class="pill" id="oralPill">OFF</span></button>
+  <button class="ctrl" id="diffCtrl">⭐ Difficulty <span class="pill" id="diffPill">All</span></button>
+  <button class="ctrl" id="herCtrl">💃 Her O <span class="pill" id="herPill">All</span></button>
+  <button class="ctrl" id="hisCtrl">💪 His O <span class="pill" id="hisPill">All</span></button>
+  <button class="ctrl" id="timeCtrl">⏱️ Timer <span class="pill" id="timePill">Off</span></button>
 </div>
 
 <div class="spinwrap"><button id="spin">SPIN</button></div>
@@ -210,6 +225,15 @@ header.rig .title{
         <select id="bulkCat"></select>
         <button class="btn" id="bulkApply">Tap-to-Apply</button>
       </div>
+      <div class="filters" id="filterToggles">
+        <label><input type="checkbox" id="chkDiff"> Difficulty</label>
+        <label><input type="checkbox" id="chkHer"> Her O</label>
+        <label><input type="checkbox" id="chkHis"> His O</label>
+        <label><input type="checkbox" id="chkCat"> Category</label>
+        <input id="catSearch" class="hidden" placeholder="Search categories">
+        <select id="setCat" class="hidden"></select>
+      </div>
+      <div class="filters" id="starFilters"></div>
       <div class="grid" id="cards"></div>
     </div>
   </div>
@@ -243,7 +267,28 @@ const ALL_CATS=["All","Unassigned",...CATS];
 const PIN="1616";
 const $=s=>document.querySelector(s); const $$=s=>Array.from(document.querySelectorAll(s));
 let idb; let meta={}; // id->{...}
-let state={oralOnly:false,category:"All",timerMin:0,rig:false,flows:[[],[],[],[],[],[],[]],flowIndex:0,fCat:"All",fW0:false,bulkCat:"",bulkMode:false};
+let state={
+  oralOnly:false,
+  category:"All",
+  difficulty:"All",
+  herO:"All",
+  hisO:"All",
+  enableDiff:true,
+  enableHer:true,
+  enableHis:true,
+  enableCat:false,
+  timerMin:0,
+  rig:false,
+  flows:[[],[],[],[],[],[],[]],
+  flowIndex:0,
+  fCat:"All",
+  fW0:false,
+  fDiff:0,
+  fHer:0,
+  fHis:0,
+  bulkCat:"",
+  bulkMode:false
+};
 let currentId=null;
 const LSK="ss_meta_v1", LSS="ss_state_v1";
 function saveMeta(){localStorage.setItem(LSK,JSON.stringify(meta));}
@@ -285,12 +330,66 @@ async function batchImport(files){
 /* ===== Settings & Filters ===== */
 $("#btnSettings").addEventListener("click",openSettings);
 $("#btnCloseSettings").addEventListener("click",()=>$("#settings").classList.remove("show"));
-function openSettings(){ $("#settings").classList.add("show"); fillSelect($("#fCat"),ALL_CATS,state.fCat); $("#fW0").classList.toggle("active",state.fW0); fillSelect($("#bulkCat"),["",...CATS],state.bulkCat); renderSettings(); }
+function openSettings(){
+  $("#settings").classList.add("show");
+  fillSelect($("#fCat"),ALL_CATS,state.fCat);
+  $("#fW0").classList.toggle("active",state.fW0);
+  fillSelect($("#bulkCat"),["",...CATS],state.bulkCat);
+  $("#catSearch").value="";
+  filterCategories();
+  $("#chkDiff").checked=state.enableDiff;
+  $("#chkHer").checked=state.enableHer;
+  $("#chkHis").checked=state.enableHis;
+  $("#chkCat").checked=state.enableCat;
+  $("#setCat").classList.toggle("hidden",!state.enableCat);
+  $("#catSearch").classList.toggle("hidden",!state.enableCat);
+  renderStarFilters();
+  renderSettings();
+}
 $("#fCat").addEventListener("change",e=>{state.fCat=e.target.value;saveState();renderSettings();});
 $("#fW0").addEventListener("click",()=>{state.fW0=!state.fW0;saveState();$("#fW0").classList.toggle("active",state.fW0);renderSettings();});
 $("#bulkCat").addEventListener("change",e=>{state.bulkCat=e.target.value;saveState();});
 $("#bulkApply").addEventListener("click",()=>{ if(!state.bulkMode){ if(!state.bulkCat){toast("Choose a category first");return;} state.bulkMode=true; saveState(); toast("Bulk ON: tap cards to assign"); } else { state.bulkMode=false; saveState(); toast("Bulk OFF"); } renderSettings(); });
 $("#cards").addEventListener("click",(e)=>{ if(!state.bulkMode) return; const card=e.target.closest(".card"); if(!card) return; const id=card.dataset.id; meta[id].category=state.bulkCat; saveMeta(); renderSettings(); renderWeights(); });
+function updateFilters(){
+  $("#diffCtrl").classList.toggle("hidden",!state.enableDiff);
+  $("#herCtrl").classList.toggle("hidden",!state.enableHer);
+  $("#hisCtrl").classList.toggle("hidden",!state.enableHis);
+}
+$("#chkDiff").addEventListener("change",e=>{state.enableDiff=e.target.checked;saveState();updateFilters();});
+$("#chkHer").addEventListener("change",e=>{state.enableHer=e.target.checked;saveState();updateFilters();});
+$("#chkHis").addEventListener("change",e=>{state.enableHis=e.target.checked;saveState();updateFilters();});
+const catSearch=$("#catSearch");
+function filterCategories(){
+  const term=catSearch.value.toLowerCase();
+  const opts=ALL_CATS.filter(c=>c.toLowerCase().includes(term));
+  fillSelect($("#setCat"),opts,state.category);
+}
+catSearch.addEventListener("input",filterCategories);
+$("#chkCat").addEventListener("change",e=>{
+  state.enableCat=e.target.checked;saveState();
+  $("#setCat").classList.toggle("hidden",!state.enableCat);
+  catSearch.classList.toggle("hidden",!state.enableCat);
+  if(state.enableCat){catSearch.value="";filterCategories();}
+});
+$("#setCat").addEventListener("change",e=>{state.category=e.target.value;saveState();});
+
+function renderStarFilters(){
+  const box=$("#starFilters");
+  if(!box) return;
+  box.innerHTML="";
+  box.append(filterPicker("Difficulty","fDiff"),filterPicker("Her O","fHer"),filterPicker("His O","fHis"));
+}
+function filterPicker(label,key){
+  const row=el('div','starrow');
+  row.append(text(label),spacer());
+  for(let i=1;i<=5;i++){
+    const b=el('div','s'+(i<=state[key]?" lit":""),'★');
+    b.addEventListener('click',()=>{state[key]=state[key]===i?0:i;saveState();renderStarFilters();renderSettings();});
+    row.append(b);
+  }
+  return row;
+}
 
 function renderSettings(){
   const list=$("#cards"); list.innerHTML="";
@@ -298,6 +397,9 @@ function renderSettings(){
   if(state.fCat==="Unassigned") items=items.filter(m=>!m.category);
   else if(state.fCat!=="All") items=items.filter(m=>m.category===state.fCat);
   if(state.fW0) items=items.filter(m=>(m.weight|0)>0);
+  if(state.fDiff) items=items.filter(m=>(m.difficulty|0)===state.fDiff);
+  if(state.fHer) items=items.filter(m=>(m.hero|0)===state.fHer);
+  if(state.fHis) items=items.filter(m=>(m.hiso|0)===state.fHis);
 
   for(const m of items){
     const card=el('div','card'); card.dataset.id=m.id;
@@ -358,8 +460,13 @@ $("#spin").addEventListener("click",()=>{ if(!spinning && !timerId) spin(); });
 
 function poolNow(){ let arr=Object.values(meta).filter(m=>!m.exclude && (m.weight|0)>0);
   if(state.oralOnly) arr=arr.filter(m=>m.category==="Oral for Her"||m.category==="Oral for Him");
-  if(state.category==="Unassigned") arr=arr.filter(m=>!m.category);
-  else if(state.category!=="All") arr=arr.filter(m=>m.category===state.category);
+  if(state.enableCat){
+    if(state.category==="Unassigned") arr=arr.filter(m=>!m.category);
+    else if(state.category!=="All") arr=arr.filter(m=>m.category===state.category);
+  }
+  if(state.enableDiff && state.difficulty!=="All") arr=arr.filter(m=>(m.difficulty||0)===state.difficulty);
+  if(state.enableHer && state.herO!=="All") arr=arr.filter(m=>(m.hero||0)===state.herO);
+  if(state.enableHis && state.hisO!=="All") arr=arr.filter(m=>(m.hiso||0)===state.hisO);
   return arr;
 }
 function weighted(arr){ const sum=arr.reduce((a,b)=>a+(b.weight|0),0); let r=Math.random()*sum; for(const x of arr){ r-=(x.weight|0); if(r<=0) return x; } return arr[0]; }
@@ -424,15 +531,17 @@ function chime(){ if(!ac) return; const o=ac.createOscillator(), g=ac.createGain
 
 /* top controls */
 $("#oralCtrl").addEventListener("click",()=>{state.oralOnly=!state.oralOnly;$("#oralPill").textContent=state.oralOnly?'ON':'OFF';saveState();});
-/* Category picker overlay */
-$("#catCtrl").addEventListener("click",showCategoryPicker);
-function showCategoryPicker(){
+$("#diffCtrl").addEventListener("click",()=>showStarPicker("Difficulty","difficulty","#diffPill"));
+$("#herCtrl").addEventListener("click",()=>showStarPicker("Her O meter","herO","#herPill"));
+$("#hisCtrl").addEventListener("click",()=>showStarPicker("His O meter","hisO","#hisPill"));
+function showStarPicker(title,key,pill){
   const ov=document.createElement('div'); ov.className='overlay show';
   const sheet=document.createElement('div'); sheet.className='sheet'; sheet.style.inset='calc(env(safe-area-inset-top) + 2rem) .8rem 1.2rem';
-  sheet.innerHTML=`<header><div class="small">Choose Category</div><button class="btn" id="cpClose">Close</button></header><div class="content" id="cpList"></div>`;
+  sheet.innerHTML=`<header><div class="small">${title}</div><button class="btn" id="spClose">Close</button></header><div class="content" id="spList"></div>`;
   ov.appendChild(sheet); document.body.appendChild(ov);
-  $("#cpClose").onclick=()=>ov.remove();
-  const list=$("#cpList"); ALL_CATS.forEach(c=>{ const b=document.createElement('button'); b.className='btn'; b.style.cssText='display:block;width:100%;text-align:left;margin:.25rem 0'; b.textContent=(c===state.category?'✓ ':'')+c; b.onclick=()=>{state.category=c; saveState(); $("#catPill").textContent=c; ov.remove();}; list.appendChild(b); });
+  $("#spClose").onclick=()=>ov.remove();
+  const list=$("#spList"), opts=["All",1,2,3,4,5];
+  opts.forEach(val=>{const b=document.createElement('button'); b.className='btn'; b.style.cssText='display:block;width:100%;text-align:left;margin:.25rem 0'; const label=val==="All"?"All":"★".repeat(val); b.textContent=(state[key]===val?'✓ ':'')+label; b.onclick=()=>{state[key]=val; saveState(); $(pill).textContent=label; ov.remove();}; list.appendChild(b);});
 }
 /* Timer picker overlay */
 $("#timeCtrl").addEventListener("click", showTimerPicker);
@@ -473,8 +582,11 @@ function toast(msg){const t=document.createElement('div'); t.className='toast'; 
 (async function(){
   await openDB(); loadMeta(); loadState();
   $("#oralPill").textContent=state.oralOnly?'ON':'OFF';
-  $("#catPill").textContent=state.category;
+  $("#diffPill").textContent=state.difficulty==="All"?"All":"★".repeat(state.difficulty);
+  $("#herPill").textContent=state.herO==="All"?"All":"★".repeat(state.herO);
+  $("#hisPill").textContent=state.hisO==="All"?"All":"★".repeat(state.hisO);
   $("#timePill").textContent=state.timerMin? (state.timerMin+'m') : 'Off';
+  updateFilters();
 })();
 </script>
 </body>
