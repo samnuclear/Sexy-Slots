@@ -25,11 +25,24 @@ input,select{background:var(--panel);color:var(--text);border:1px solid var(--li
 .hidden{display:none!important}
 
 /* header */
-header{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;
-  padding:.25rem .6rem;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
-header.rig .title{color:var(--gold)}
-.hamb{width:44px;height:44px;display:grid;place-items:center;border-radius:10px}
-.title{font-weight:800}
+.title{
+  font-weight:900; letter-spacing:.3px;
+  background:linear-gradient(180deg,#fff,#e8e8f2 45%,#c9c9d9);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  text-shadow:0 1px 0 rgba(255,255,255,.25), 0 6px 18px rgba(226,185,75,.12);
+  position:relative;
+}
+header.rig .title{
+  background:linear-gradient(180deg,#ffd86a,#e2b94b 50%,#b8922f);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  text-shadow:0 6px 18px rgba(226,185,75,.25);
+}
+.title::after{
+  content:""; position:absolute; left:50%; transform:translateX(-50%);
+  bottom:-6px; width:64px; height:3px; border-radius:3px;
+  background:linear-gradient(90deg,transparent,#e2b94b,transparent);
+  opacity:.7;
+}
 
 /* controls */
 .controls{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;padding:.6rem}
@@ -37,7 +50,19 @@ header.rig .title{color:var(--gold)}
 .ctrl .pill{background:#2a2a36;border-radius:999px;padding:.05em .55em;font-size:12px;color:#ddd}
 .ctrl.active{background:var(--gold);color:#000}
 .spinwrap{padding:.3rem .6rem}
-#spin{width:100%;min-height:52px;border-radius:14px;background:linear-gradient(180deg,var(--pink),#c50d40);font-weight:900;letter-spacing:.3px}
+#spin{
+  width:100%; min-height:56px; border-radius:16px;
+  background:linear-gradient(180deg,#ff5078 0%,#ff3b66 40%,#c50d40 100%);
+  font-weight:900; letter-spacing:.35px; color:#fff;
+  box-shadow:0 10px 24px rgba(255,59,102,.25), inset 0 1px 0 rgba(255,255,255,.12);
+  position:relative; overflow:hidden;
+}
+#spin::before{ /* soft shine */
+  content:""; position:absolute; inset:0;
+  background:linear-gradient(180deg,rgba(255,255,255,.18),transparent 45%);
+  pointer-events:none;
+}
+#spin:active{ transform:translateY(1px); box-shadow:0 8px 16px rgba(255,59,102,.22), inset 0 1px 0 rgba(255,255,255,.05); }
 #spin[disabled]{opacity:.4}
 
 /* reels */
@@ -138,6 +163,23 @@ header.rig .title{color:var(--gold)}
     <div class="meter"><div class="label" id="difficultyLabel">Difficulty</div><div class="stars" id="mDiff">☆☆☆☆☆</div></div>
     <div class="meter"><div class="label">Her‑O Meter</div><div class="stars" id="mHer">☆☆☆☆☆</div></div>
     <div class="meter"><div class="label">His‑O Meter</div><div class="stars" id="mHis">☆☆☆☆☆</div></div>
+  </div>
+    <!-- Hidden description -->
+  <div class="desc" id="descBox" style="padding:0 .9rem 1rem;">
+    <button class="btn" id="descToggle">Show description</button>
+    <div class="desc-body hidden" id="descBody" style="margin-top:.5rem;">
+      <div id="descText" class="desc-text small" style="white-space:pre-wrap;line-height:1.35;border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:.6rem;"></div>
+      <div class="desc-edit hidden" id="descEdit" style="margin-top:.5rem;">
+        <textarea id="descArea" rows="4" style="width:100%;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--text);padding:.6rem;"></textarea>
+        <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:.4rem">
+          <button class="btn" id="descCancel">Cancel</button>
+          <button class="btn" id="descSave">Save</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:.4rem">
+        <button class="btn" id="descEditBtn">Edit</button>
+      </div>
+    </div>
   </div>
   <div class="tbar hidden" id="tbar">
     <div class="timer">
@@ -248,7 +290,7 @@ async function batchImport(files){
   let done=0, ok=0; for(const f of files){ if(cancelled) break;
     done++; ptext.textContent=`Importing ${done} of ${files.length}…`; pbar.style.width=Math.round(done/files.length*100)+"%";
     try{ const id=makeId(); await idbPut(id,f);
-      meta[id]={id,name:(f.name||"").replace(/\.[^.]+$/,""),category:"",difficulty:3,hero:3,hiso:3,weight:1,exclude:false}; ok++;
+      meta[id]={id,name:(f.name||"").replace(/\.[^.]+$/,""),category:"",difficulty:3,hero:3,hiso:3,weight:1,exclude:false,desc:""}; ok++;
       await new Promise(r=>requestAnimationFrame(r));
     }catch(e){ console.warn("Import fail",e); }
   }
@@ -350,6 +392,7 @@ function renderWeights(){
 }
 
 /* =============== Spin + animation + timer + sound =============== */
+let currentId=null;
 let spinning=false, timerId=null, remain=0;
 $("#spin").addEventListener("click",()=>{ if(!spinning && !timerId) spin(); });
 
@@ -402,12 +445,16 @@ function spin(){
   unlockAudioOnce(); spinTick();
 }
 
+let currentId=m.id;
+
 function finishSpin(m){
   $("#revName").textContent=m.name||"Untitled";
   $("#mDiff").textContent="★".repeat(m.difficulty||1)+"☆".repeat(5-(m.difficulty||1));
   $("#mHer").textContent="★".repeat(m.hero||1)+"☆".repeat(5-(m.hero||1));
   $("#mHis").textContent="★".repeat(m.hiso||1)+"☆".repeat(5-(m.hiso||1));
   idbGet(m.id).then(r=>{if(r) $("#revImg").src=URL.createObjectURL(r.blob);});
+  currentId = m.id;
+  populateDesc();            // ← new
   spinning=false;
   if(state.timerMin>0) startTimer(state.timerMin*60);
   else $("#spin").disabled=false;
@@ -488,6 +535,50 @@ function toast(msg){const t=document.createElement('div'); t.className='toast'; 
   $("#catPill").textContent=state.category;
   $("#timePill").textContent=state.timerMin? (state.timerMin+'m') : 'Off';
 })();
+
+// description UI
+const descToggle=$("#descToggle"), descBody=$("#descBody"),
+      descText=$("#descText"), descEdit=$("#descEdit"),
+      descArea=$("#descArea"), descSave=$("#descSave"),
+      descCancel=$("#descCancel"), descEditBtn=$("#descEditBtn");
+
+function populateDesc(){
+  const d = (currentId && meta[currentId] && typeof meta[currentId].desc==="string")
+            ? meta[currentId].desc : "";
+  descText.textContent = d || "No description yet.";
+  descArea.value = d || "";
+  // reset to view mode each time
+  descBody.classList.add("hidden");
+  descEdit.classList.add("hidden");
+  descToggle.textContent="Show description";
+}
+
+descToggle.addEventListener("click",()=>{
+  const open = !descBody.classList.contains("hidden");
+  if(open){ descBody.classList.add("hidden"); descToggle.textContent="Show description"; }
+  else    { descBody.classList.remove("hidden"); descToggle.textContent="Hide description"; }
+});
+
+descEditBtn.addEventListener("click",()=>{
+  descEdit.classList.remove("hidden");
+  descArea.focus();
+});
+
+descCancel.addEventListener("click",()=>{
+  descEdit.classList.add("hidden");
+  // revert text area to stored value
+  const d=(currentId && meta[currentId])? (meta[currentId].desc||"") : "";
+  descArea.value=d;
+});
+
+descSave.addEventListener("click",()=>{
+  if(!currentId || !meta[currentId]) return;
+  meta[currentId].desc = descArea.value.trim();
+  saveMeta();
+  descText.textContent = meta[currentId].desc || "No description yet.";
+  descEdit.classList.add("hidden");
+});
+
 </script>
 </body>
 </html>
