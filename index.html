@@ -18,10 +18,10 @@
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;margin:0;background:var(--bg);color:var(--text);
-  font-family:-apple-system,BlinkMacSystemFont,"SF Pro",Roboto,system-ui,sans-serif;overflow:hidden;touch-action:manipulation}
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro",Roboto,system-ui,sans-serif;overflow:auto;touch-action:manipulation}
 button{border:0;background:none;color:inherit;font:inherit;cursor:pointer;touch-action:manipulation}
 input,select{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:.5em .7em;min-height:44px}
-.safe{height:calc(env(safe-area-inset-top) + 2cm)}
+.safe{height:calc(env(safe-area-inset-top) + 1cm)}
 .hidden{display:none!important}
 
 /* header */
@@ -102,6 +102,11 @@ header.rig .title{color:var(--gold)}
 
 /* util */
 .toast{position:fixed;left:50%;bottom:18vh;transform:translateX(-50%);background:#111;border:1px solid var(--line);padding:10px 14px;border-radius:12px;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.36)}
+
+/* ensure inner lists keep scrolling on iOS */
+.reveal{ -webkit-overflow-scrolling: touch; }
+.sheet .content{ -webkit-overflow-scrolling: touch; }
+
 </style>
 </head>
 <body>
@@ -430,7 +435,27 @@ function chime(){ if(!ac) return; const o=ac.createOscillator(), g=ac.createGain
 
 /* Top controls */
 $("#oralCtrl").addEventListener("click",()=>{state.oralOnly=!state.oralOnly;$("#oralPill").textContent=state.oralOnly?'ON':'OFF';saveState();});
-$("#timeCtrl").addEventListener("click",()=>{const m=parseInt(prompt("Timer minutes (0=Off)",state.timerMin)||"0",10); state.timerMin=Math.max(0,m); $("#timePill").textContent= state.timerMin? (state.timerMin+'m'):'Off'; saveState();});
+$("#timeCtrl").addEventListener("click", showTimerPicker);
+
+function showTimerPicker(){
+  const ov=document.createElement('div'); ov.className='overlay show';
+  const sheet=document.createElement('div'); sheet.className='sheet';
+  sheet.style.inset='calc(env(safe-area-inset-top) + 2rem) .8rem 1.2rem';
+  sheet.innerHTML=`<header><div class="small">Timer</div><button class="btn" id="tpClose">Close</button></header><div class="content" id="tpList"></div>`;
+  ov.appendChild(sheet); document.body.appendChild(ov);
+  $("#tpClose").onclick=()=>ov.remove();
+
+  const opts=[0,1,2,3,4,5];
+  const list=$("#tpList");
+  opts.forEach(min=>{
+    const b=document.createElement('button');
+    b.className='btn';
+    b.style.cssText='display:block;width:100%;text-align:left;margin:.25rem 0';
+    b.textContent=(state.timerMin===min?'✓ ':'') + (min? `${min} minute${min>1?'s':''}` : 'Off');
+    b.onclick=()=>{ state.timerMin=min; $("#timePill").textContent=min? (min+'m'):'Off'; saveState(); ov.remove(); };
+    list.appendChild(b);
+  });
+}
 
 /* Category picker overlay (no typing) */
 $("#catCtrl").addEventListener("click",showCategoryPicker);
