@@ -234,62 +234,7 @@ function idbGet(id){return new Promise((res,rej)=>{ const tx=idb.transaction("im
 function idbDel(id){return new Promise((res,rej)=>{ const tx=idb.transaction("images","readwrite"); tx.objectStore("images").delete(id); tx.oncomplete=res; tx.onerror=()=>rej(tx.error);});}
 
 /* ─────────────────────────────────────────
-   Upload (sequential; 100+; progress + cancel; robust IDs)
-   ───────────────────────────────────────── */
-$("#btnUpload").addEventListener("click", ()=>{
-  const inp=document.createElement("input");
-  inp.type="file"; inp.accept="image/*"; inp.multiple=true;
-  inp.onchange=()=>{ if(inp.files && inp.files.length){ batchImport(Array.from(inp.files)); } };
-  inp.click();
-});
-
-function makeId(){ try{ return crypto.randomUUID(); } catch{ return Date.now()+"-"+Math.random().toString(16).slice(2); } }
-
-async function batchImport(files){
-  // progress overlay
-  const ov = document.createElement("div");
-  ov.style.cssText="position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center;color:#fff;";
-  ov.innerHTML = `
-    <div style="background:#1c1c22;border:1px solid #2a2a36;padding:16px 18px;border-radius:12px;min-width:260px;text-align:center">
-      <div id="ptext" style="margin-bottom:10px">Preparing…</div>
-      <div style="height:8px;background:#2a2a36;border-radius:6px;overflow:hidden">
-        <div id="pbar" style="height:100%;width:0;background:#e2b94b"></div>
-      </div>
-      <button id="pcancel" class="btn red" style="margin-top:12px;width:100%">Cancel</button>
-    </div>`;
-  document.body.appendChild(ov);
-  let cancelled=false;
-  ov.querySelector("#pcancel").onclick=()=>{cancelled=true;};
-
-  const ptext=ov.querySelector("#ptext");
-  const pbar =ov.querySelector("#pbar");
-
-  let done=0, ok=0, fail=0;
-  for(const f of files){
-    if(cancelled) break;
-    done++;
-    ptext.textContent=`Importing ${done} of ${files.length}…`;
-    pbar.style.width = Math.round(done/files.length*100)+"%";
-    try{
-      const id = makeId();
-      // write to IDB, then meta; continue even if one file fails
-      await idbPut(id, f);
-      meta[id] = {id, name: (f.name||"").replace(/\.[^.]+$/,""), category:"", difficulty:3, hero:3, hiso:3, weight:1, exclude:false};
-      ok++;
-      // yield to UI so progress animates smoothly
-      await new Promise(r=>requestAnimationFrame(r));
-    }catch(e){
-      console.warn("Import failed:", e); fail++;
-      await new Promise(r=>setTimeout(r,0));
-      continue;
-    }
-  }
-  saveMeta();
-  document.body.removeChild(ov);
-  toast(cancelled ? `Import cancelled (${ok} saved)` : `Imported ${ok}${fail?` • Failed ${fail}`:""}`);
-  // show settings so you can see the list immediately
-  renderSettings(); renderWeights();
-}
+   Upload (sequential; handles 100+)
    ───────────────────────────────────────── */
 $("#btnUpload").addEventListener("click", ()=>{
   const inp=document.createElement("input");
@@ -434,55 +379,6 @@ let spinning=false, timerId=null, remain=0;
 $("#spin").addEventListener("click", ()=>{ if(!spinning && !timerId) spin(); });
 
 function spin(){
-  const pool = poolNow();
-  if(pool.length === 0){ toast("No images match filters (need at least 1 included with weight > 0)."); return; }
-
-  let chosen;
-  if(state.rig && state.flows[state.flowIndex].length){
-    const id = state.flows[state.flowIndex].shift();
-    chosen = meta[id];
-    saveState(); renderFlowList();
-  } else {
-    chosen = weighted(pool);
-  }
-
-  spinning=true; $("#spin").disabled=true;
-
-  const reels=[ $("#reel1"), $("#reel2"), $("#reel3") ];
-  const dur=[5400,6000,5700];
-
-  // tolerate pools of size 1–2: fill others with chosen/random available
-  const ids = pool.map(m=>m.id);
-  const left  = (ids.find(id=>id!==chosen.id) || chosen.id);
-  const right = (ids.find(id=>id!==chosen.id && id!==left) || chosen.id);
-  const stopIds=[left, chosen.id, right];
-
-  reels.forEach(r=>r.classList.add("blur"));
-
-  const start=performance.now();
-  const speed0=26;
-  function step(now){
-    const t=now-start;
-    reels.forEach((reel,i)=>{
-      const d=dur[i]; const p=Math.min(1,t/d); const ease=1-Math.pow(1-p,3);
-      const ms = speed0 + ease*140;
-      if(!reel._next || now>reel._next){
-        reel._next = now + ms;
-        const randid = ids[Math.floor(Math.random()*ids.length)] || chosen.id;
-        idbGet(randid).then(rec=>{ if(rec) reel.querySelector("img").src=URL.createObjectURL(rec.blob); });
-      }
-      if(p>=1){
-        idbGet(stopIds[i]).then(rec=>{ if(rec) reel.querySelector("img").src=URL.createObjectURL(rec.blob); });
-        reel.classList.remove("blur");
-      }
-    });
-    if(t<Math.max(...dur)) requestAnimationFrame(step);
-    else finishSpin(chosen);
-  }
-  requestAnimationFrame(step);
-
-  unlockAudioOnce(); playSpinTick();
-}
   const pool=poolNow();
   if(pool.length<3){ toast("Add at least 3 included images with weight > 0."); return; }
 
@@ -581,20 +477,7 @@ function text(t){ const s=document.createElement('span'); s.textContent=t; retur
 function spacer(){ const s=document.createElement('div'); s.style.flex='1'; return s; }
 function btn(label,fn){ const b=document.createElement('button'); b.className='btn'; b.textContent=label; b.addEventListener('click',fn); return b; }
 function fillSelect(sel,items,val){ sel.innerHTML=""; items.forEach(x=>{ const o=document.createElement('option'); o.value=x; o.textContent=x; if(x===val) o.selected=true; sel.appendChild(o); }); }
-function toast(msg){
-  const t=document.createElement("div");
-  t.className="toast";
-  t.textContent=msg;
-  document.body.appendChild(t);
-  setTimeout(()=>{t.style.opacity="0"; t.style.transition="opacity .35s";},1300);
-  setTimeout(()=>t.remove(),1850);
-}
-// quick debug on open settings to confirm counts
-$("#btnSettings").addEventListener("click",()=>{ setTimeout(()=>{
-  const total=Object.keys(meta).length;
-  const pool=poolNow().length;
-  toast(`Images: ${total} • Pool: ${pool}`);
-}, 300); }, {capture:false}); const t=el('div','toast',msg); document.body.appendChild(t); setTimeout(()=>{t.style.opacity='0'; t.style.transition='opacity .4s';},1400); setTimeout(()=>t.remove(),2000); }
+function toast(msg){ const t=el('div','toast',msg); document.body.appendChild(t); setTimeout(()=>{t.style.opacity='0'; t.style.transition='opacity .4s';},1400); setTimeout(()=>t.remove(),2000); }
 function remove(n){ if(n && n.parentNode) n.parentNode.removeChild(n); }
 
 /* Prevent double-tap zoom */
@@ -607,7 +490,6 @@ let lastTouch=0; window.addEventListener("touchend",(e)=>{ const now=Date.now();
   $("#catPill").textContent=state.category;
   $("#timePill").textContent=state.timerMin? (state.timerMin+'m') : 'Off';
 })();
-setTimeout(()=>{const t=document.createElement('div');t.textContent='JS running';t.style.cssText='position:fixed;left:50%;bottom:15vh;transform:translateX(-50%);background:#111;color:#fff;padding:8px 12px;border-radius:10px;z-index:9999';document.body.appendChild(t);setTimeout(()=>t.remove(),1200)},100);
 </script>
 </body>
 </html>
