@@ -217,6 +217,11 @@ header.rig .title{
         <select id="bulkCat"></select>
         <button class="btn" id="bulkApply">Tap-to-Apply</button>
       </div>
+      <div class="filters">
+        <label>Difficulty <select id="fDiff"></select></label>
+        <label>Her O <select id="fHer"></select></label>
+        <label>His O <select id="fHis"></select></label>
+      </div>
       <div class="filters" id="filterToggles">
         <label><input type="checkbox" id="chkDiff"> Difficulty</label>
         <label><input type="checkbox" id="chkHer"> Her O</label>
@@ -272,6 +277,9 @@ let state={
   flows:[[],[],[],[],[],[],[]],
   flowIndex:0,
   fCat:"All",
+  fDiff:"All",
+  fHer:"All",
+  fHis:"All",
   fW0:false,
   bulkCat:"",
   bulkMode:false
@@ -329,6 +337,9 @@ $("#btnCloseSettings").addEventListener("click",()=>$("#settings").classList.rem
 function openSettings(){
   $("#settings").classList.add("show");
   fillSelect($("#fCat"),ALL_CATS,state.fCat);
+  fillSelect($("#fDiff"),["All",1,2,3,4,5],state.fDiff);
+  fillSelect($("#fHer"),["All",1,2,3,4,5],state.fHer);
+  fillSelect($("#fHis"),["All",1,2,3,4,5],state.fHis);
   $("#fW0").classList.toggle("active",state.fW0);
   fillSelect($("#bulkCat"),["",...CATS],state.bulkCat);
   fillSelect($("#setCat"),ALL_CATS,state.category);
@@ -340,6 +351,9 @@ function openSettings(){
   renderSettings();
 }
 $("#fCat").addEventListener("change",e=>{state.fCat=e.target.value;saveState();renderSettings();});
+$("#fDiff").addEventListener("change",e=>{state.fDiff=e.target.value;saveState();renderSettings();});
+$("#fHer").addEventListener("change",e=>{state.fHer=e.target.value;saveState();renderSettings();});
+$("#fHis").addEventListener("change",e=>{state.fHis=e.target.value;saveState();renderSettings();});
 $("#fW0").addEventListener("click",()=>{state.fW0=!state.fW0;saveState();$("#fW0").classList.toggle("active",state.fW0);renderSettings();});
 $("#bulkCat").addEventListener("change",e=>{state.bulkCat=e.target.value;saveState();});
 $("#bulkApply").addEventListener("click",()=>{ if(!state.bulkMode){ if(!state.bulkCat){toast("Choose a category first");return;} state.bulkMode=true; saveState(); toast("Bulk ON: tap cards to assign"); } else { state.bulkMode=false; saveState(); toast("Bulk OFF"); } renderSettings(); });
@@ -362,6 +376,9 @@ function renderSettings(){
   if(state.fCat==="Unassigned") items=items.filter(m=>!m.category);
   else if(state.fCat!=="All") items=items.filter(m=>m.category===state.fCat);
   if(state.fW0) items=items.filter(m=>(m.weight|0)>0);
+  if(state.fDiff!=="All") items=items.filter(m=>(m.difficulty|0)===Number(state.fDiff));
+  if(state.fHer!=="All") items=items.filter(m=>(m.hero|0)===Number(state.fHer));
+  if(state.fHis!=="All") items=items.filter(m=>(m.hiso|0)===Number(state.fHis));
 
   for(const m of items){
     const card=el('div','card'); card.dataset.id=m.id;
